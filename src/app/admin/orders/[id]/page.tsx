@@ -15,12 +15,9 @@ import {
   MapPin,
   Phone,
   Calendar,
-  DollarSign,
-  User,
   MessageCircle,
   Copy,
   Check,
-  ExternalLink,
 } from 'lucide-react';
 
 interface Order {

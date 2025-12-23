@@ -1,13 +1,12 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { collection, query, orderBy, limit, onSnapshot, where, Timestamp } from 'firebase/firestore';
+import { collection, query, orderBy, limit, onSnapshot, Timestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { formatPrice } from '@/lib/utils';
 import Link from 'next/link';
 import {
   ShoppingCart,
-  DollarSign,
   Clock,
   CheckCircle,
   TrendingUp,

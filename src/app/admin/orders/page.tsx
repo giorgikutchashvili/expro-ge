@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react';
 import { collection, query, orderBy, onSnapshot, Timestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { formatPrice } from '@/lib/utils';
-import Link from 'next/link';
 import {
   Search,
   Filter,
