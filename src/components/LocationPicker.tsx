@@ -20,12 +20,6 @@ interface PlaceSuggestion {
   fullText: string;
 }
 
-interface GeocodeSuggestion {
-  address: string;
-  lat: number;
-  lng: number;
-}
-
 type SelectionMode = 'pickup' | 'dropoff' | null;
 
 const defaultCenter = {
