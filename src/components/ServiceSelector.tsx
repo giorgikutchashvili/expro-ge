@@ -1,6 +1,8 @@
 'use client';
 
 import { ServiceType } from '@/lib/types';
+import CargoTruckIcon from '@/components/icons/CargoTruckIcon';
+import TowTruckIcon from '@/components/icons/TowTruckIcon';
 
 interface ServiceSelectorProps {
   onSelect: (serviceType: ServiceType) => void;
@@ -25,19 +27,7 @@ export default function ServiceSelector({ onSelect }: ServiceSelectorProps) {
             {/* Cargo Icon */}
             <div className="w-24 h-24 bg-blue-100 rounded-full flex items-center justify-center
                           group-hover:bg-blue-500 transition-colors duration-300">
-              <svg
-                className="w-12 h-12 text-blue-500 group-hover:text-white transition-colors duration-300"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"
-                />
-              </svg>
+              <CargoTruckIcon className="w-12 h-12 text-blue-500 group-hover:text-white transition-colors duration-300" />
             </div>
 
             <h3 className="text-xl font-semibold text-gray-800 group-hover:text-blue-600 transition-colors">
@@ -66,30 +56,10 @@ export default function ServiceSelector({ onSelect }: ServiceSelectorProps) {
                      transform hover:-translate-y-1"
         >
           <div className="flex flex-col items-center space-y-4">
-            {/* Evacuator/Truck Icon */}
+            {/* Evacuator/Tow Truck Icon */}
             <div className="w-24 h-24 bg-orange-100 rounded-full flex items-center justify-center
                           group-hover:bg-orange-500 transition-colors duration-300">
-              <svg
-                className="w-12 h-12 text-orange-500 group-hover:text-white transition-colors duration-300"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M8 7h8m-8 4h8m-6 4h4M5 3h14a2 2 0 012 2v14a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2z"
-                />
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M16 21v-4a2 2 0 00-2-2h-4a2 2 0 00-2 2v4"
-                />
-                <circle cx="7.5" cy="17.5" r="1.5" fill="currentColor" />
-                <circle cx="16.5" cy="17.5" r="1.5" fill="currentColor" />
-              </svg>
+              <TowTruckIcon className="w-12 h-12 text-orange-500 group-hover:text-white transition-colors duration-300" />
             </div>
 
             <h3 className="text-xl font-semibold text-gray-800 group-hover:text-orange-600 transition-colors">

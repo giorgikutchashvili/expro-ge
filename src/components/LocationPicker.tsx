@@ -13,7 +13,14 @@ interface LocationPickerProps {
   onDistanceChange: (distance: number | null) => void;
 }
 
-interface Suggestion {
+interface PlaceSuggestion {
+  placeId: string;
+  mainText: string;
+  secondaryText: string;
+  fullText: string;
+}
+
+interface GeocodeSuggestion {
   address: string;
   lat: number;
   lng: number;
@@ -31,13 +38,13 @@ const mapContainerStyle = {
   height: '100%',
 };
 
+// Default Google Maps style with all buildings visible
 const mapOptions: google.maps.MapOptions = {
-  disableDefaultUI: false,
+  gestureHandling: "greedy",
   zoomControl: true,
   streetViewControl: false,
   mapTypeControl: false,
   fullscreenControl: true,
-  clickableIcons: false,
 };
 
 export default function LocationPicker({
@@ -58,11 +65,15 @@ export default function LocationPicker({
   const [pickupError, setPickupError] = useState<string | null>(null);
   const [dropoffError, setDropoffError] = useState<string | null>(null);
 
-  // Autocomplete suggestions
-  const [pickupSuggestions, setPickupSuggestions] = useState<Suggestion[]>([]);
-  const [dropoffSuggestions, setDropoffSuggestions] = useState<Suggestion[]>([]);
+  // Autocomplete suggestions (from Places API)
+  const [pickupSuggestions, setPickupSuggestions] = useState<PlaceSuggestion[]>([]);
+  const [dropoffSuggestions, setDropoffSuggestions] = useState<PlaceSuggestion[]>([]);
   const [showPickupSuggestions, setShowPickupSuggestions] = useState(false);
   const [showDropoffSuggestions, setShowDropoffSuggestions] = useState(false);
+
+  // Loading states for autocomplete
+  const [isLoadingPickupSuggestions, setIsLoadingPickupSuggestions] = useState(false);
+  const [isLoadingDropoffSuggestions, setIsLoadingDropoffSuggestions] = useState(false);
 
   // Map click selection mode
   const [selectionMode, setSelectionMode] = useState<SelectionMode>(null);
@@ -109,45 +120,8 @@ export default function LocationPicker({
     });
   }, []);
 
-  // Geocode address to coordinates
-  const geocodeAddress = useCallback(async (address: string): Promise<Location | null> => {
-    if (!geocoderRef.current) {
-      geocoderRef.current = new google.maps.Geocoder();
-    }
-
-    return new Promise((resolve) => {
-      geocoderRef.current!.geocode(
-        {
-          address: address,
-          region: 'ge',
-          componentRestrictions: { country: 'ge' },
-        },
-        (results, status) => {
-          if (status === 'OK' && results && results[0]) {
-            const result = results[0];
-            resolve({
-              address: result.formatted_address,
-              lat: result.geometry.location.lat(),
-              lng: result.geometry.location.lng(),
-            });
-          } else {
-            resolve(null);
-          }
-        }
-      );
-    });
-  }, []);
-
-  // Fetch address suggestions using Geocoding API
-  const fetchSuggestions = useCallback(async (input: string, type: 'pickup' | 'dropoff') => {
-    if (!geocoderRef.current) {
-      if (typeof google !== 'undefined' && google.maps) {
-        geocoderRef.current = new google.maps.Geocoder();
-      } else {
-        return;
-      }
-    }
-
+  // Fetch autocomplete suggestions using new Places API
+  const fetchAutocompleteSuggestions = useCallback(async (input: string, type: 'pickup' | 'dropoff') => {
     if (input.length < 2) {
       if (type === 'pickup') {
         setPickupSuggestions([]);
@@ -157,6 +131,126 @@ export default function LocationPicker({
       return;
     }
 
+    if (type === 'pickup') {
+      setIsLoadingPickupSuggestions(true);
+    } else {
+      setIsLoadingDropoffSuggestions(true);
+    }
+
+    try {
+      const response = await fetch(
+        'https://places.googleapis.com/v1/places:autocomplete',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Goog-Api-Key': process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || '',
+          },
+          body: JSON.stringify({
+            input: input,
+            locationBias: {
+              circle: {
+                center: { latitude: 41.7151, longitude: 44.8271 },
+                radius: 50000
+              }
+            },
+            includedRegionCodes: ['GE'],
+            languageCode: 'ka'
+          })
+        }
+      );
+
+      const data = await response.json();
+
+      if (data.suggestions && data.suggestions.length > 0) {
+        const suggestions: PlaceSuggestion[] = data.suggestions
+          .slice(0, 5)
+          .map((suggestion: { placePrediction?: { placeId: string; structuredFormat?: { mainText?: { text: string }; secondaryText?: { text: string } }; text?: { text: string } } }) => {
+            const prediction = suggestion.placePrediction;
+            if (!prediction) return null;
+            return {
+              placeId: prediction.placeId,
+              mainText: prediction.structuredFormat?.mainText?.text || prediction.text?.text || '',
+              secondaryText: prediction.structuredFormat?.secondaryText?.text || '',
+              fullText: prediction.text?.text || '',
+            };
+          })
+          .filter(Boolean) as PlaceSuggestion[];
+
+        if (type === 'pickup') {
+          setPickupSuggestions(suggestions);
+          setShowPickupSuggestions(suggestions.length > 0);
+        } else {
+          setDropoffSuggestions(suggestions);
+          setShowDropoffSuggestions(suggestions.length > 0);
+        }
+      } else {
+        if (type === 'pickup') {
+          setPickupSuggestions([]);
+        } else {
+          setDropoffSuggestions([]);
+        }
+      }
+    } catch (error) {
+      console.error('Autocomplete error:', error);
+      // Fall back to empty suggestions on error
+      if (type === 'pickup') {
+        setPickupSuggestions([]);
+      } else {
+        setDropoffSuggestions([]);
+      }
+    } finally {
+      if (type === 'pickup') {
+        setIsLoadingPickupSuggestions(false);
+      } else {
+        setIsLoadingDropoffSuggestions(false);
+      }
+    }
+  }, []);
+
+  // Get place details from place ID using new Places API
+  const getPlaceDetails = useCallback(async (placeId: string): Promise<Location | null> => {
+    try {
+      const response = await fetch(
+        `https://places.googleapis.com/v1/places/${placeId}`,
+        {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Goog-Api-Key': process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || '',
+            'X-Goog-FieldMask': 'displayName,formattedAddress,location'
+          }
+        }
+      );
+
+      const data = await response.json();
+
+      if (data.location) {
+        return {
+          address: data.formattedAddress || data.displayName?.text || '',
+          lat: data.location.latitude,
+          lng: data.location.longitude,
+        };
+      }
+      return null;
+    } catch (error) {
+      console.error('Place details error:', error);
+      return null;
+    }
+  }, []);
+
+  // Fallback: Search with Geocoder
+  const searchWithGeocoder = useCallback((input: string, type: 'pickup' | 'dropoff') => {
+    if (!geocoderRef.current) {
+      geocoderRef.current = new google.maps.Geocoder();
+    }
+
+    if (type === 'pickup') {
+      setIsSearchingPickup(true);
+    } else {
+      setIsSearchingDropoff(true);
+    }
+
     geocoderRef.current.geocode(
       {
         address: input,
@@ -164,50 +258,70 @@ export default function LocationPicker({
         componentRestrictions: { country: 'ge' },
       },
       (results, status) => {
+        if (type === 'pickup') {
+          setIsSearchingPickup(false);
+        } else {
+          setIsSearchingDropoff(false);
+        }
+
         if (status === 'OK' && results && results.length > 0) {
-          // Take up to 5 results as suggestions
-          const suggestions: Suggestion[] = results.slice(0, 5).map((result) => ({
+          const result = results[0];
+          const location: Location = {
             address: result.formatted_address,
             lat: result.geometry.location.lat(),
             lng: result.geometry.location.lng(),
-          }));
+          };
 
           if (type === 'pickup') {
-            setPickupSuggestions(suggestions);
+            onPickupChange(location);
+            setPickupInput(location.address);
+            setShowPickupSuggestions(false);
+            setPickupSuggestions([]);
+            setMapCenter({ lat: location.lat, lng: location.lng });
+            setMapZoom(15);
+            setPickupError(null);
           } else {
-            setDropoffSuggestions(suggestions);
+            onDropoffChange(location);
+            setDropoffInput(location.address);
+            setShowDropoffSuggestions(false);
+            setDropoffSuggestions([]);
+            setDropoffError(null);
           }
         } else {
           if (type === 'pickup') {
-            setPickupSuggestions([]);
+            setPickupError('მისამართი ვერ მოიძებნა');
           } else {
-            setDropoffSuggestions([]);
+            setDropoffError('მისამართი ვერ მოიძებნა');
           }
         }
       }
     );
-  }, []);
+  }, [onPickupChange, onDropoffChange]);
 
   // Handle suggestion selection
-  const handleSuggestionSelect = (suggestion: Suggestion, type: 'pickup' | 'dropoff') => {
-    const location: Location = {
-      address: suggestion.address,
-      lat: suggestion.lat,
-      lng: suggestion.lng,
-    };
+  const handleSuggestionSelect = async (suggestion: PlaceSuggestion, type: 'pickup' | 'dropoff') => {
+    // Get place details (coordinates) from place_id
+    const location = await getPlaceDetails(suggestion.placeId);
 
-    if (type === 'pickup') {
-      onPickupChange(location);
-      setPickupInput(location.address);
-      setShowPickupSuggestions(false);
-      setPickupSuggestions([]);
-      setMapCenter({ lat: location.lat, lng: location.lng });
-      setMapZoom(14);
+    if (location) {
+      if (type === 'pickup') {
+        onPickupChange(location);
+        setPickupInput(location.address);
+        setShowPickupSuggestions(false);
+        setPickupSuggestions([]);
+        setMapCenter({ lat: location.lat, lng: location.lng });
+        setMapZoom(15);
+        setPickupError(null);
+      } else {
+        onDropoffChange(location);
+        setDropoffInput(location.address);
+        setShowDropoffSuggestions(false);
+        setDropoffSuggestions([]);
+        setDropoffError(null);
+      }
     } else {
-      onDropoffChange(location);
-      setDropoffInput(location.address);
-      setShowDropoffSuggestions(false);
-      setDropoffSuggestions([]);
+      // Fallback to geocoder if place details fail
+      searchWithGeocoder(suggestion.fullText || suggestion.mainText, type);
     }
   };
 
@@ -234,36 +348,31 @@ export default function LocationPicker({
     setSelectionMode(null);
   }, [selectionMode, reverseGeocode, onPickupChange, onDropoffChange]);
 
-  // Debounced input change for autocomplete
+  // Debounced autocomplete for pickup
   useEffect(() => {
-    if (!pickupInput || pickupInput.length < 2) {
-      setPickupSuggestions([]);
+    if (!pickupInput || pickupInput.length < 2 || pickup?.address === pickupInput) {
       return;
     }
 
     const timer = setTimeout(() => {
-      if (showPickupSuggestions) {
-        fetchSuggestions(pickupInput, 'pickup');
-      }
+      fetchAutocompleteSuggestions(pickupInput, 'pickup');
     }, 300);
 
     return () => clearTimeout(timer);
-  }, [pickupInput, showPickupSuggestions, fetchSuggestions]);
+  }, [pickupInput, pickup?.address, fetchAutocompleteSuggestions]);
 
+  // Debounced autocomplete for dropoff
   useEffect(() => {
-    if (!dropoffInput || dropoffInput.length < 2) {
-      setDropoffSuggestions([]);
+    if (!dropoffInput || dropoffInput.length < 2 || dropoff?.address === dropoffInput) {
       return;
     }
 
     const timer = setTimeout(() => {
-      if (showDropoffSuggestions) {
-        fetchSuggestions(dropoffInput, 'dropoff');
-      }
+      fetchAutocompleteSuggestions(dropoffInput, 'dropoff');
     }, 300);
 
     return () => clearTimeout(timer);
-  }, [dropoffInput, showDropoffSuggestions, fetchSuggestions]);
+  }, [dropoffInput, dropoff?.address, fetchAutocompleteSuggestions]);
 
   // Close suggestions on click outside
   useEffect(() => {
@@ -283,66 +392,51 @@ export default function LocationPicker({
   const handlePickupInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setPickupInput(e.target.value);
     setPickupError(null);
-    setShowPickupSuggestions(true);
+    if (e.target.value.length >= 2) {
+      setShowPickupSuggestions(true);
+    } else {
+      setShowPickupSuggestions(false);
+      setPickupSuggestions([]);
+    }
   };
 
   const handleDropoffInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setDropoffInput(e.target.value);
     setDropoffError(null);
-    setShowDropoffSuggestions(true);
+    if (e.target.value.length >= 2) {
+      setShowDropoffSuggestions(true);
+    } else {
+      setShowDropoffSuggestions(false);
+      setDropoffSuggestions([]);
+    }
   };
 
-  const handlePickupSearch = async () => {
+  const handlePickupSearch = () => {
     if (!pickupInput.trim()) {
       setPickupError('გთხოვთ შეიყვანოთ მისამართი');
       return;
     }
-
-    setIsSearchingPickup(true);
-    setPickupError(null);
     setShowPickupSuggestions(false);
-
-    const location = await geocodeAddress(pickupInput);
-
-    if (location) {
-      onPickupChange(location);
-      setPickupInput(location.address);
-      setMapCenter({ lat: location.lat, lng: location.lng });
-      setMapZoom(14);
-    } else {
-      setPickupError('მისამართი ვერ მოიძებნა');
-    }
-
-    setIsSearchingPickup(false);
+    searchWithGeocoder(pickupInput, 'pickup');
   };
 
-  const handleDropoffSearch = async () => {
+  const handleDropoffSearch = () => {
     if (!dropoffInput.trim()) {
       setDropoffError('გთხოვთ შეიყვანოთ მისამართი');
       return;
     }
-
-    setIsSearchingDropoff(true);
-    setDropoffError(null);
     setShowDropoffSuggestions(false);
-
-    const location = await geocodeAddress(dropoffInput);
-
-    if (location) {
-      onDropoffChange(location);
-      setDropoffInput(location.address);
-    } else {
-      setDropoffError('მისამართი ვერ მოიძებნა');
-    }
-
-    setIsSearchingDropoff(false);
+    searchWithGeocoder(dropoffInput, 'dropoff');
   };
 
   const handlePickupKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
       e.preventDefault();
-      setShowPickupSuggestions(false);
-      handlePickupSearch();
+      if (pickupSuggestions.length > 0) {
+        handleSuggestionSelect(pickupSuggestions[0], 'pickup');
+      } else {
+        handlePickupSearch();
+      }
     } else if (e.key === 'Escape') {
       setShowPickupSuggestions(false);
     }
@@ -351,8 +445,11 @@ export default function LocationPicker({
   const handleDropoffKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
       e.preventDefault();
-      setShowDropoffSuggestions(false);
-      handleDropoffSearch();
+      if (dropoffSuggestions.length > 0) {
+        handleSuggestionSelect(dropoffSuggestions[0], 'dropoff');
+      } else {
+        handleDropoffSearch();
+      }
     } else if (e.key === 'Escape') {
       setShowDropoffSuggestions(false);
     }
@@ -442,15 +539,15 @@ export default function LocationPicker({
                 type="text"
                 value={pickupInput}
                 onChange={handlePickupInputChange}
-                onFocus={() => setShowPickupSuggestions(true)}
+                onFocus={() => pickupInput.length >= 2 && setShowPickupSuggestions(true)}
                 onKeyDown={handlePickupKeyDown}
-                placeholder="მაგ: თავისუფლების მოედანი, თბილისი"
+                placeholder="ჩაწერეთ მისამართი..."
                 className={`w-full px-4 py-3 pr-10 border rounded-lg focus:ring-2
                          focus:ring-blue-500 focus:border-transparent outline-none transition-all
                          text-gray-900 placeholder:text-gray-400 bg-white
                          ${pickupError ? 'border-red-300' : 'border-gray-200'}`}
               />
-              {pickup && (
+              {pickup ? (
                 <button
                   onClick={clearPickup}
                   type="button"
@@ -461,27 +558,39 @@ export default function LocationPicker({
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                   </svg>
                 </button>
+              ) : isLoadingPickupSuggestions && (
+                <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                  <svg className="w-5 h-5 animate-spin text-gray-400" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                  </svg>
+                </div>
               )}
 
               {/* Pickup Suggestions Dropdown */}
               {showPickupSuggestions && pickupSuggestions.length > 0 && (
                 <div
-                  className="absolute left-0 right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-xl max-h-60 overflow-y-auto"
+                  className="absolute left-0 right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-xl max-h-72 overflow-y-auto"
                   style={{ zIndex: 9999 }}
                 >
                   {pickupSuggestions.map((suggestion, index) => (
                     <button
-                      key={index}
+                      key={suggestion.placeId}
                       type="button"
                       onClick={() => handleSuggestionSelect(suggestion, 'pickup')}
-                      className="w-full px-4 py-3 text-left hover:bg-green-50 border-b border-gray-100 last:border-b-0
-                               flex items-start space-x-3 transition-colors"
+                      className={`w-full px-4 py-3 text-left hover:bg-green-50 border-b border-gray-100 last:border-b-0
+                               flex items-start space-x-3 transition-colors ${index === 0 ? 'bg-green-50/50' : ''}`}
                     >
                       <svg className="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                       </svg>
-                      <span className="text-sm text-gray-700">{suggestion.address}</span>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-gray-900 truncate">{suggestion.mainText}</p>
+                        {suggestion.secondaryText && (
+                          <p className="text-xs text-gray-500 truncate">{suggestion.secondaryText}</p>
+                        )}
+                      </div>
                     </button>
                   ))}
                 </div>
@@ -493,8 +602,8 @@ export default function LocationPicker({
               onClick={handlePickupSearch}
               disabled={isSearchingPickup}
               type="button"
-              className="px-3 py-3 bg-green-500 hover:bg-green-600 disabled:bg-green-300
-                       text-white rounded-lg transition-colors flex items-center"
+              className="px-4 py-3 bg-green-500 hover:bg-green-600 disabled:bg-green-300
+                       text-white rounded-lg transition-colors flex items-center space-x-2"
               title="ძებნა"
             >
               {isSearchingPickup ? (
@@ -507,6 +616,7 @@ export default function LocationPicker({
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
               )}
+              <span className="hidden sm:inline">ძებნა</span>
             </button>
 
             {/* Map Selection Button */}
@@ -552,15 +662,15 @@ export default function LocationPicker({
                 type="text"
                 value={dropoffInput}
                 onChange={handleDropoffInputChange}
-                onFocus={() => setShowDropoffSuggestions(true)}
+                onFocus={() => dropoffInput.length >= 2 && setShowDropoffSuggestions(true)}
                 onKeyDown={handleDropoffKeyDown}
-                placeholder="მაგ: თბილისის აეროპორტი"
+                placeholder="ჩაწერეთ მისამართი..."
                 className={`w-full px-4 py-3 pr-10 border rounded-lg focus:ring-2
                          focus:ring-blue-500 focus:border-transparent outline-none transition-all
                          text-gray-900 placeholder:text-gray-400 bg-white
                          ${dropoffError ? 'border-red-300' : 'border-gray-200'}`}
               />
-              {dropoff && (
+              {dropoff ? (
                 <button
                   onClick={clearDropoff}
                   type="button"
@@ -571,27 +681,39 @@ export default function LocationPicker({
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                   </svg>
                 </button>
+              ) : isLoadingDropoffSuggestions && (
+                <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                  <svg className="w-5 h-5 animate-spin text-gray-400" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                  </svg>
+                </div>
               )}
 
               {/* Dropoff Suggestions Dropdown */}
               {showDropoffSuggestions && dropoffSuggestions.length > 0 && (
                 <div
-                  className="absolute left-0 right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-xl max-h-60 overflow-y-auto"
+                  className="absolute left-0 right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-xl max-h-72 overflow-y-auto"
                   style={{ zIndex: 9999 }}
                 >
                   {dropoffSuggestions.map((suggestion, index) => (
                     <button
-                      key={index}
+                      key={suggestion.placeId}
                       type="button"
                       onClick={() => handleSuggestionSelect(suggestion, 'dropoff')}
-                      className="w-full px-4 py-3 text-left hover:bg-red-50 border-b border-gray-100 last:border-b-0
-                               flex items-start space-x-3 transition-colors"
+                      className={`w-full px-4 py-3 text-left hover:bg-red-50 border-b border-gray-100 last:border-b-0
+                               flex items-start space-x-3 transition-colors ${index === 0 ? 'bg-red-50/50' : ''}`}
                     >
                       <svg className="w-5 h-5 text-red-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                       </svg>
-                      <span className="text-sm text-gray-700">{suggestion.address}</span>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-gray-900 truncate">{suggestion.mainText}</p>
+                        {suggestion.secondaryText && (
+                          <p className="text-xs text-gray-500 truncate">{suggestion.secondaryText}</p>
+                        )}
+                      </div>
                     </button>
                   ))}
                 </div>
@@ -603,8 +725,8 @@ export default function LocationPicker({
               onClick={handleDropoffSearch}
               disabled={isSearchingDropoff}
               type="button"
-              className="px-3 py-3 bg-red-500 hover:bg-red-600 disabled:bg-red-300
-                       text-white rounded-lg transition-colors flex items-center"
+              className="px-4 py-3 bg-red-500 hover:bg-red-600 disabled:bg-red-300
+                       text-white rounded-lg transition-colors flex items-center space-x-2"
               title="ძებნა"
             >
               {isSearchingDropoff ? (
@@ -617,6 +739,7 @@ export default function LocationPicker({
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
               )}
+              <span className="hidden sm:inline">ძებნა</span>
             </button>
 
             {/* Map Selection Button */}

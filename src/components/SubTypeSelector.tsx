@@ -1,8 +1,8 @@
 'use client';
 
 import { ServiceType, CargoSize, EvacuatorType } from '@/lib/types';
-import { CARGO_PRICES, EVACUATOR_PRICES } from '@/lib/constants';
-import { formatPrice } from '@/lib/utils';
+import CargoTruckIcon from '@/components/icons/CargoTruckIcon';
+import TowTruckIcon from '@/components/icons/TowTruckIcon';
 
 interface SubTypeSelectorProps {
   serviceType: ServiceType;
@@ -22,6 +22,7 @@ interface EvacuatorOption {
   type: EvacuatorType;
   name: string;
   description: string;
+  examples: string;
 }
 
 const cargoOptions: CargoOption[] = [
@@ -66,66 +67,37 @@ const evacuatorOptions: EvacuatorOption[] = [
   {
     type: 'LIGHT',
     name: 'მსუბუქი ავტო',
-    description: 'სედანი, ჰეტჩბექი, კუპე',
+    description: 'სტანდარტული მსუბუქი ავტომობილები',
+    examples: 'სედანი, ჰეტჩბექი, კუპე',
   },
   {
     type: 'JEEP',
     name: 'ჯიპი / SUV',
-    description: 'ჯიპი, კროსოვერი, SUV',
+    description: 'მაღალი გამავლობის ავტომობილები',
+    examples: 'ჯიპი, კროსოვერი, SUV',
   },
   {
     type: 'MINIBUS',
     name: 'მიკროავტობუსი',
-    description: 'მინივენი, მიკროავტობუსი',
+    description: 'სამგზავრო მიკროავტობუსები',
+    examples: 'მინივენი, მიკროავტობუსი',
   },
   {
     type: 'SPIDER',
     name: 'სპაიდერი',
-    description: 'დაბალი კლირენსის ავტომობილები',
+    description: 'დაბალი კლირენსის ავტომობილებისთვის',
+    examples: 'სპორტული ავტო, დაბალი მანქანები',
   },
   {
     type: 'OVERSIZED',
     name: 'დიდგაბარიტიანი',
-    description: 'ავტობუსი, სატვირთო, სპეცტექნიკა',
+    description: 'დიდი ზომის ტრანსპორტი',
+    examples: 'ავტობუსი, სატვირთო, სპეცტექნიკა',
   },
 ];
 
-function CargoIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth={2}
-        d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"
-      />
-    </svg>
-  );
-}
-
-function TruckIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth={2}
-        d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z"
-      />
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth={2}
-        d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0"
-      />
-    </svg>
-  );
-}
-
 export default function SubTypeSelector({ serviceType, onSelect, onBack }: SubTypeSelectorProps) {
   const isCargo = serviceType === 'cargo';
-  const prices = isCargo ? CARGO_PRICES : EVACUATOR_PRICES;
-  const accentColor = isCargo ? 'blue' : 'orange';
 
   return (
     <div className="w-full max-w-4xl mx-auto p-6">
@@ -141,12 +113,9 @@ export default function SubTypeSelector({ serviceType, onSelect, onBack }: SubTy
         <span>უკან</span>
       </button>
 
-      <h2 className="text-2xl font-bold text-center text-gray-800 mb-2">
+      <h2 className="text-2xl font-bold text-center text-gray-800 mb-8">
         {isCargo ? 'აირჩიეთ ტვირთის ზომა' : 'აირჩიეთ ავტომობილის ტიპი'}
       </h2>
-      <p className="text-gray-500 text-center mb-8">
-        ფასები მოცემულია თბილისის ზონაში (35 კმ-მდე)
-      </p>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {isCargo
@@ -154,33 +123,40 @@ export default function SubTypeSelector({ serviceType, onSelect, onBack }: SubTy
               <button
                 key={option.type}
                 onClick={() => onSelect(option.type)}
-                className={`group bg-white rounded-xl p-6 shadow-md border-2 border-gray-100
-                           hover:border-${accentColor}-500 hover:shadow-lg transition-all duration-300
-                           text-left transform hover:-translate-y-1`}
+                className="group bg-white rounded-xl p-5 shadow-md border-2 border-gray-100
+                         hover:border-blue-500 hover:shadow-xl transition-all duration-300
+                         text-left transform hover:-translate-y-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
-                <div className="flex items-start space-x-4">
-                  <div
-                    className={`w-14 h-14 bg-${accentColor}-100 rounded-lg flex items-center justify-center
-                                flex-shrink-0 group-hover:bg-${accentColor}-500 transition-colors duration-300`}
-                  >
-                    <CargoIcon
-                      className={`w-7 h-7 text-${accentColor}-500 group-hover:text-white transition-colors duration-300`}
-                    />
+                {/* Icon */}
+                <div className="w-14 h-14 bg-blue-50 rounded-xl flex items-center justify-center mb-4
+                              group-hover:bg-blue-500 transition-colors duration-300">
+                  <CargoTruckIcon className="w-8 h-8 text-blue-500 group-hover:text-white transition-colors duration-300" />
+                </div>
+
+                {/* Title */}
+                <h3 className="text-lg font-bold text-gray-800 mb-2">{option.name}</h3>
+
+                {/* Description */}
+                <p className="text-sm text-gray-500 mb-4">{option.description}</p>
+
+                {/* Specs */}
+                <div className="space-y-2 pt-3 border-t border-gray-100">
+                  <div className="flex items-center text-sm">
+                    <span className="text-gray-400 w-20">ზომა:</span>
+                    <span className="text-gray-700 font-medium">{option.dimensions}</span>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-semibold text-gray-800 mb-1">{option.name}</h3>
-                    <p className="text-sm text-gray-500 mb-2">{option.description}</p>
-                    <div className="text-xs text-gray-400 space-y-1">
-                      <p>📐 {option.dimensions}</p>
-                      <p>⚖️ {option.weight}</p>
-                    </div>
+                  <div className="flex items-center text-sm">
+                    <span className="text-gray-400 w-20">წონა:</span>
+                    <span className="text-gray-700 font-medium">{option.weight}</span>
                   </div>
                 </div>
-                <div className="mt-4 pt-4 border-t border-gray-100 flex justify-between items-center">
-                  <span className="text-sm text-gray-500">ფასი:</span>
-                  <span className={`text-lg font-bold text-${accentColor}-600`}>
-                    {formatPrice(prices[option.type].customerPrice)}
-                  </span>
+
+                {/* Select indicator */}
+                <div className="mt-4 flex items-center justify-end text-blue-500 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <span className="text-sm font-medium">არჩევა</span>
+                  <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
                 </div>
               </button>
             ))
@@ -188,29 +164,36 @@ export default function SubTypeSelector({ serviceType, onSelect, onBack }: SubTy
               <button
                 key={option.type}
                 onClick={() => onSelect(option.type)}
-                className={`group bg-white rounded-xl p-6 shadow-md border-2 border-gray-100
-                           hover:border-${accentColor}-500 hover:shadow-lg transition-all duration-300
-                           text-left transform hover:-translate-y-1`}
+                className="group bg-white rounded-xl p-5 shadow-md border-2 border-gray-100
+                         hover:border-orange-500 hover:shadow-xl transition-all duration-300
+                         text-left transform hover:-translate-y-1 focus:outline-none focus:ring-2 focus:ring-orange-500"
               >
-                <div className="flex items-start space-x-4">
-                  <div
-                    className={`w-14 h-14 bg-${accentColor}-100 rounded-lg flex items-center justify-center
-                                flex-shrink-0 group-hover:bg-${accentColor}-500 transition-colors duration-300`}
-                  >
-                    <TruckIcon
-                      className={`w-7 h-7 text-${accentColor}-500 group-hover:text-white transition-colors duration-300`}
-                    />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-semibold text-gray-800 mb-1">{option.name}</h3>
-                    <p className="text-sm text-gray-500">{option.description}</p>
+                {/* Icon */}
+                <div className="w-14 h-14 bg-orange-50 rounded-xl flex items-center justify-center mb-4
+                              group-hover:bg-orange-500 transition-colors duration-300">
+                  <TowTruckIcon className="w-8 h-8 text-orange-500 group-hover:text-white transition-colors duration-300" />
+                </div>
+
+                {/* Title */}
+                <h3 className="text-lg font-bold text-gray-800 mb-2">{option.name}</h3>
+
+                {/* Description */}
+                <p className="text-sm text-gray-500 mb-2">{option.description}</p>
+
+                {/* Examples */}
+                <div className="pt-3 border-t border-gray-100">
+                  <div className="flex items-start text-sm">
+                    <span className="text-gray-400 shrink-0">მაგ:</span>
+                    <span className="text-gray-600 ml-2">{option.examples}</span>
                   </div>
                 </div>
-                <div className="mt-4 pt-4 border-t border-gray-100 flex justify-between items-center">
-                  <span className="text-sm text-gray-500">ფასი:</span>
-                  <span className={`text-lg font-bold text-${accentColor}-600`}>
-                    {formatPrice(prices[option.type].customerPrice)}
-                  </span>
+
+                {/* Select indicator */}
+                <div className="mt-4 flex items-center justify-end text-orange-500 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <span className="text-sm font-medium">არჩევა</span>
+                  <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
                 </div>
               </button>
             ))}

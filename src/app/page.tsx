@@ -186,8 +186,11 @@ export default function Home() {
         <header className="bg-white shadow-sm sticky top-0 z-50">
           <div className="max-w-4xl mx-auto px-4 py-4">
             <div className="flex items-center justify-between">
-              {/* Logo */}
-              <div className="flex items-center space-x-2">
+              {/* Logo - clickable to go home */}
+              <button
+                onClick={handleNewOrder}
+                className="flex items-center space-x-2 hover:opacity-80 transition-opacity"
+              >
                 <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center">
                   <svg
                     className="w-6 h-6 text-white"
@@ -204,7 +207,7 @@ export default function Home() {
                   </svg>
                 </div>
                 <span className="text-xl font-bold text-gray-800">EXPRO.GE</span>
-              </div>
+              </button>
 
               {/* Step Indicator */}
               {currentStep < 6 && (
@@ -280,26 +283,47 @@ export default function Home() {
           {/* Step 3: Location Picker */}
           {currentStep === 3 && (
             <div className="space-y-6">
-              {/* Back Button */}
-              <button
-                onClick={handleBack}
-                className="flex items-center space-x-2 text-gray-600 hover:text-gray-800 transition-colors"
-              >
-                <svg
-                  className="w-5 h-5"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
+              {/* Navigation Buttons */}
+              <div className="flex items-center space-x-4">
+                <button
+                  onClick={handleBack}
+                  className="flex items-center space-x-2 text-gray-600 hover:text-gray-800 transition-colors"
                 >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M15 19l-7-7 7-7"
-                  />
-                </svg>
-                <span>უკან</span>
-              </button>
+                  <svg
+                    className="w-5 h-5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M15 19l-7-7 7-7"
+                    />
+                  </svg>
+                  <span>უკან</span>
+                </button>
+                <button
+                  onClick={handleNewOrder}
+                  className="flex items-center space-x-2 text-blue-600 hover:text-blue-800 transition-colors"
+                >
+                  <svg
+                    className="w-5 h-5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
+                    />
+                  </svg>
+                  <span>თავიდან</span>
+                </button>
+              </div>
 
               <LocationPicker
                 pickup={pickup}
@@ -331,26 +355,47 @@ export default function Home() {
           {/* Step 4: Date/Time Picker */}
           {currentStep === 4 && (
             <div className="space-y-6 max-w-lg mx-auto">
-              {/* Back Button */}
-              <button
-                onClick={handleBack}
-                className="flex items-center space-x-2 text-gray-600 hover:text-gray-800 transition-colors"
-              >
-                <svg
-                  className="w-5 h-5"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
+              {/* Navigation Buttons */}
+              <div className="flex items-center space-x-4">
+                <button
+                  onClick={handleBack}
+                  className="flex items-center space-x-2 text-gray-600 hover:text-gray-800 transition-colors"
                 >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M15 19l-7-7 7-7"
-                  />
-                </svg>
-                <span>უკან</span>
-              </button>
+                  <svg
+                    className="w-5 h-5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M15 19l-7-7 7-7"
+                    />
+                  </svg>
+                  <span>უკან</span>
+                </button>
+                <button
+                  onClick={handleNewOrder}
+                  className="flex items-center space-x-2 text-blue-600 hover:text-blue-800 transition-colors"
+                >
+                  <svg
+                    className="w-5 h-5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
+                    />
+                  </svg>
+                  <span>თავიდან</span>
+                </button>
+              </div>
 
               <DateTimePicker
                 scheduledTime={scheduledTime}
@@ -375,26 +420,47 @@ export default function Home() {
           {/* Step 5: Order Form */}
           {currentStep === 5 && (
             <div className="space-y-6 max-w-lg mx-auto">
-              {/* Back Button */}
-              <button
-                onClick={handleBack}
-                className="flex items-center space-x-2 text-gray-600 hover:text-gray-800 transition-colors"
-              >
-                <svg
-                  className="w-5 h-5"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
+              {/* Navigation Buttons */}
+              <div className="flex items-center space-x-4">
+                <button
+                  onClick={handleBack}
+                  className="flex items-center space-x-2 text-gray-600 hover:text-gray-800 transition-colors"
                 >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M15 19l-7-7 7-7"
-                  />
-                </svg>
-                <span>უკან</span>
-              </button>
+                  <svg
+                    className="w-5 h-5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M15 19l-7-7 7-7"
+                    />
+                  </svg>
+                  <span>უკან</span>
+                </button>
+                <button
+                  onClick={handleNewOrder}
+                  className="flex items-center space-x-2 text-blue-600 hover:text-blue-800 transition-colors"
+                >
+                  <svg
+                    className="w-5 h-5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
+                    />
+                  </svg>
+                  <span>თავიდან</span>
+                </button>
+              </div>
 
               {/* Order Summary */}
               <div className="bg-white rounded-xl p-4 shadow-md">
