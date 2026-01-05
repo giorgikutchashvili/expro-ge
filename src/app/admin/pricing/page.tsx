@@ -3,7 +3,8 @@
 import { useEffect, useState } from 'react';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { CARGO_PRICES, EVACUATOR_PRICES, TBILISI_FIXED_ZONE_KM } from '@/lib/constants';
+import { CARGO_PRICES, EVACUATOR_PRICES, SERVICE_VEHICLE_PRICES, TBILISI_FIXED_ZONE_KM } from '@/lib/constants';
+import { SERVICE_VEHICLE_LABELS } from '@/lib/types';
 import {
   Save,
   Package,
@@ -22,6 +23,7 @@ interface PricingSettings {
   tbilisiFixedZoneKm: number;
   cargo: Record<string, PriceConfig>;
   evacuator: Record<string, PriceConfig>;
+  serviceVehicle: Record<string, PriceConfig>;
 }
 
 const cargoTypes = [
@@ -29,20 +31,31 @@ const cargoTypes = [
   { key: 'M', label: 'M - საშუალო' },
   { key: 'L', label: 'L - დიდი' },
   { key: 'XL', label: 'XL - ძალიან დიდი' },
-  { key: 'construction', label: 'სამშენებლო' },
+  { key: 'CONSTRUCTION', label: 'სამშენებლო' },
 ];
 
 const evacuatorTypes = [
-  { key: 'light', label: 'მსუბუქი' },
-  { key: 'jeep', label: 'ჯიპი' },
-  { key: 'minibus', label: 'მიკროავტობუსი' },
-  { key: 'spider', label: 'სპაიდერი' },
-  { key: 'oversized', label: 'ზომაგადასული' },
+  { key: 'LIGHT', label: 'მსუბუქი' },
+  { key: 'JEEP', label: 'ჯიპი' },
+  { key: 'MINIBUS', label: 'მიკროავტობუსი' },
+  { key: 'SPIDER', label: 'სპაიდერი' },
+  { key: 'OVERSIZED', label: 'ზომაგადასული' },
+];
+
+// New service vehicle types
+const serviceVehicleTypes = [
+  { key: 'STANDARD', label: SERVICE_VEHICLE_LABELS.STANDARD },
+  { key: 'SPIDER', label: SERVICE_VEHICLE_LABELS.SPIDER },
+  { key: 'LOWBOY', label: SERVICE_VEHICLE_LABELS.LOWBOY },
+  { key: 'HEAVY_MANIPULATOR', label: SERVICE_VEHICLE_LABELS.HEAVY_MANIPULATOR },
+  { key: 'LONG_BED', label: SERVICE_VEHICLE_LABELS.LONG_BED },
+  { key: 'MOTO_CARRIER', label: SERVICE_VEHICLE_LABELS.MOTO_CARRIER },
 ];
 
 const getDefaultSettings = (): PricingSettings => {
   const cargoDefaults: Record<string, PriceConfig> = {};
   const evacuatorDefaults: Record<string, PriceConfig> = {};
+  const serviceVehicleDefaults: Record<string, PriceConfig> = {};
 
   Object.entries(CARGO_PRICES).forEach(([key, value]) => {
     cargoDefaults[key] = {
@@ -60,10 +73,19 @@ const getDefaultSettings = (): PricingSettings => {
     };
   });
 
+  Object.entries(SERVICE_VEHICLE_PRICES).forEach(([key, value]) => {
+    serviceVehicleDefaults[key] = {
+      customerPrice: value.customerPrice,
+      driverPrice: value.driverPrice,
+      perKm: value.perKm,
+    };
+  });
+
   return {
     tbilisiFixedZoneKm: TBILISI_FIXED_ZONE_KM,
     cargo: cargoDefaults,
     evacuator: evacuatorDefaults,
+    serviceVehicle: serviceVehicleDefaults,
   };
 };
 
@@ -77,15 +99,49 @@ export default function PricingPage() {
     const fetchSettings = async () => {
       try {
         const settingsDoc = await getDoc(doc(db, 'settings', 'pricing'));
+        const defaults = getDefaultSettings();
+
         if (settingsDoc.exists()) {
           const data = settingsDoc.data() as PricingSettings;
-          // Merge with defaults to ensure all keys exist
+
+          // Helper to merge price configs, using default if Firestore value is 0 or missing
+          const mergePrices = (
+            defaultPrices: Record<string, PriceConfig>,
+            firestorePrices: Record<string, PriceConfig> | undefined
+          ): Record<string, PriceConfig> => {
+            const result: Record<string, PriceConfig> = {};
+            Object.keys(defaultPrices).forEach((key) => {
+              const defaultConfig = defaultPrices[key];
+              const firestoreConfig = firestorePrices?.[key];
+
+              // Use Firestore value if it exists and is not 0, otherwise use default
+              result[key] = {
+                customerPrice:
+                  firestoreConfig?.customerPrice && firestoreConfig.customerPrice > 0
+                    ? firestoreConfig.customerPrice
+                    : defaultConfig.customerPrice,
+                driverPrice:
+                  firestoreConfig?.driverPrice && firestoreConfig.driverPrice > 0
+                    ? firestoreConfig.driverPrice
+                    : defaultConfig.driverPrice,
+                perKm:
+                  firestoreConfig?.perKm && firestoreConfig.perKm > 0
+                    ? firestoreConfig.perKm
+                    : defaultConfig.perKm,
+              };
+            });
+            return result;
+          };
+
           setSettings({
-            ...getDefaultSettings(),
-            ...data,
-            cargo: { ...getDefaultSettings().cargo, ...data.cargo },
-            evacuator: { ...getDefaultSettings().evacuator, ...data.evacuator },
+            tbilisiFixedZoneKm: data.tbilisiFixedZoneKm || defaults.tbilisiFixedZoneKm,
+            cargo: mergePrices(defaults.cargo, data.cargo),
+            evacuator: mergePrices(defaults.evacuator, data.evacuator),
+            serviceVehicle: mergePrices(defaults.serviceVehicle, data.serviceVehicle),
           });
+        } else {
+          // No Firestore data, use defaults
+          setSettings(defaults);
         }
       } catch (error) {
         console.error('Error fetching pricing settings:', error);
@@ -135,6 +191,19 @@ export default function PricingPage() {
         ...prev.evacuator,
         [key]: {
           ...prev.evacuator[key],
+          [field]: value,
+        },
+      },
+    }));
+  };
+
+  const updateServiceVehiclePrice = (key: string, field: keyof PriceConfig, value: number) => {
+    setSettings((prev) => ({
+      ...prev,
+      serviceVehicle: {
+        ...prev.serviceVehicle,
+        [key]: {
+          ...prev.serviceVehicle[key],
           [field]: value,
         },
       },
@@ -364,6 +433,92 @@ export default function PricingPage() {
                           updateEvacuatorPrice(key, 'perKm', Number(e.target.value))
                         }
                         className="w-24 px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-gray-900 bg-white"
+                      />
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`font-semibold ${profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        {profit}₾
+                      </span>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Service Vehicle Prices (New) */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        <div className="flex items-center space-x-3 p-6 border-b border-gray-100">
+          <div className="p-2 bg-orange-100 rounded-lg">
+            <Truck className="w-5 h-5 text-orange-600" />
+          </div>
+          <div>
+            <h2 className="font-semibold text-gray-800">ევაკუატორის ფასები (ახალი)</h2>
+            <p className="text-xs text-gray-500">მომხმარებლის არჩევანის მიხედვით</p>
+          </div>
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  ტიპი
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  კლიენტის ფასი (₾)
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  მძღოლის ფასი (₾)
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  კმ-ზე (₾)
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  მოგება
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {serviceVehicleTypes.map(({ key, label }) => {
+                const config = settings.serviceVehicle[key] || { customerPrice: 0, driverPrice: 0, perKm: 0 };
+                const profit = config.customerPrice - config.driverPrice;
+                return (
+                  <tr key={key}>
+                    <td className="px-6 py-4 whitespace-nowrap font-medium text-gray-800">
+                      {label}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <input
+                        type="number"
+                        value={config.customerPrice}
+                        onChange={(e) =>
+                          updateServiceVehiclePrice(key, 'customerPrice', Number(e.target.value))
+                        }
+                        className="w-24 px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none text-gray-900 bg-white"
+                      />
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <input
+                        type="number"
+                        value={config.driverPrice}
+                        onChange={(e) =>
+                          updateServiceVehiclePrice(key, 'driverPrice', Number(e.target.value))
+                        }
+                        className="w-24 px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none text-gray-900 bg-white"
+                      />
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <input
+                        type="number"
+                        step="0.1"
+                        value={config.perKm}
+                        onChange={(e) =>
+                          updateServiceVehiclePrice(key, 'perKm', Number(e.target.value))
+                        }
+                        className="w-24 px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none text-gray-900 bg-white"
                       />
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">

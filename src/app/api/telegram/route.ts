@@ -4,7 +4,11 @@ interface TelegramOrderRequest {
   serviceType: string;
   subType: string;
   pickupAddress: string;
+  pickupLat: number;
+  pickupLng: number;
   dropoffAddress: string;
+  dropoffLat: number;
+  dropoffLng: number;
   customerPrice: number;
   phone: string;
   distance: number;
@@ -17,16 +21,37 @@ export async function POST(request: NextRequest) {
     const body: TelegramOrderRequest = await request.json();
     console.log('Request body:', JSON.stringify(body, null, 2));
 
-    const { serviceType, subType, pickupAddress, dropoffAddress, customerPrice, phone, distance } = body;
+    const {
+      serviceType,
+      subType,
+      pickupAddress,
+      pickupLat,
+      pickupLng,
+      dropoffAddress,
+      dropoffLat,
+      dropoffLng,
+      customerPrice,
+      phone,
+      distance,
+    } = body;
 
     const serviceLabel = serviceType === 'cargo' ? 'ტვირთი' : 'ევაკუატორი';
+
+    // Create Google Maps links with exact coordinates
+    const pickupMapLink = `https://www.google.com/maps?q=${pickupLat},${pickupLng}`;
+    const dropoffMapLink = `https://www.google.com/maps?q=${dropoffLat},${dropoffLng}`;
 
     const message = `
 🚗 ახალი შეკვეთა!
 
 📦 სერვისი: ${serviceLabel} (${subType})
+
 📍 აყვანა: ${pickupAddress}
+🗺 ${pickupMapLink}
+
 📍 ჩაბარება: ${dropoffAddress}
+🗺 ${dropoffMapLink}
+
 📏 მანძილი: ${distance.toFixed(1)} კმ
 💰 ფასი: ${customerPrice}₾
 📞 ტელეფონი: ${phone}

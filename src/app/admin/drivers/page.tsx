@@ -11,6 +11,7 @@ import {
   Timestamp,
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import { ServiceVehicleType, SERVICE_VEHICLE_LABELS } from '@/lib/types';
 import {
   Plus,
   Edit2,
@@ -20,28 +21,77 @@ import {
   Phone,
   Truck,
   Save,
+  MapPin,
+  Clock,
+  Calendar,
 } from 'lucide-react';
 
 interface Driver {
   id: string;
   name: string;
   phone: string;
-  vehicleType: string;
+  vehicleType?: string; // Legacy field
+  serviceVehicleType?: ServiceVehicleType;
+  baseLocation?: string;
+  workingDays?: string[];
+  workingHours?: { start: string; end: string };
   createdAt?: Timestamp;
 }
 
-const vehicleTypes = [
+// Service vehicle types for evacuators
+const serviceVehicleTypes: { value: ServiceVehicleType; label: string }[] = [
+  { value: 'STANDARD', label: SERVICE_VEHICLE_LABELS.STANDARD },
+  { value: 'SPIDER', label: SERVICE_VEHICLE_LABELS.SPIDER },
+  { value: 'LOWBOY', label: SERVICE_VEHICLE_LABELS.LOWBOY },
+  { value: 'HEAVY_MANIPULATOR', label: SERVICE_VEHICLE_LABELS.HEAVY_MANIPULATOR },
+  { value: 'LONG_BED', label: SERVICE_VEHICLE_LABELS.LONG_BED },
+  { value: 'MOTO_CARRIER', label: SERVICE_VEHICLE_LABELS.MOTO_CARRIER },
+];
+
+// Cargo vehicle types
+const cargoVehicleTypes = [
   { value: 'S', label: 'S - მცირე' },
   { value: 'M', label: 'M - საშუალო' },
   { value: 'L', label: 'L - დიდი' },
   { value: 'XL', label: 'XL - ძალიან დიდი' },
-  { value: 'construction', label: 'სამშენებლო' },
-  { value: 'light', label: 'მსუბუქი' },
-  { value: 'jeep', label: 'ჯიპი' },
-  { value: 'minibus', label: 'მიკროავტობუსი' },
-  { value: 'spider', label: 'სპაიდერი' },
-  { value: 'oversized', label: 'ზომაგადასული' },
+  { value: 'CONSTRUCTION', label: 'სამშენებლო' },
 ];
+
+const weekDays = [
+  { value: 'MON', label: 'ორშ' },
+  { value: 'TUE', label: 'სამ' },
+  { value: 'WED', label: 'ოთხ' },
+  { value: 'THU', label: 'ხუთ' },
+  { value: 'FRI', label: 'პარ' },
+  { value: 'SAT', label: 'შაბ' },
+  { value: 'SUN', label: 'კვი' },
+];
+
+type DriverType = 'cargo' | 'evacuator';
+
+interface FormData {
+  name: string;
+  phone: string;
+  driverType: DriverType;
+  vehicleType: string;
+  serviceVehicleType: ServiceVehicleType;
+  baseLocation: string;
+  workingDays: string[];
+  workingHoursStart: string;
+  workingHoursEnd: string;
+}
+
+const defaultFormData: FormData = {
+  name: '',
+  phone: '',
+  driverType: 'evacuator',
+  vehicleType: 'M',
+  serviceVehicleType: 'STANDARD',
+  baseLocation: '',
+  workingDays: ['MON', 'TUE', 'WED', 'THU', 'FRI'],
+  workingHoursStart: '09:00',
+  workingHoursEnd: '18:00',
+};
 
 export default function DriversPage() {
   const [drivers, setDrivers] = useState<Driver[]>([]);
@@ -50,13 +100,10 @@ export default function DriversPage() {
   const [editingDriver, setEditingDriver] = useState<Driver | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  const [filterType, setFilterType] = useState<'all' | 'cargo' | 'evacuator'>('all');
 
   // Form state
-  const [formData, setFormData] = useState({
-    name: '',
-    phone: '',
-    vehicleType: 'M',
-  });
+  const [formData, setFormData] = useState<FormData>(defaultFormData);
 
   useEffect(() => {
     const unsubscribe = onSnapshot(collection(db, 'drivers'), (snapshot) => {
@@ -73,16 +120,26 @@ export default function DriversPage() {
 
   const openAddModal = () => {
     setEditingDriver(null);
-    setFormData({ name: '', phone: '', vehicleType: 'M' });
+    setFormData(defaultFormData);
     setShowModal(true);
   };
 
   const openEditModal = (driver: Driver) => {
     setEditingDriver(driver);
+
+    // Determine driver type based on existing data
+    const isEvacuator = !!driver.serviceVehicleType;
+
     setFormData({
       name: driver.name,
       phone: driver.phone,
-      vehicleType: driver.vehicleType,
+      driverType: isEvacuator ? 'evacuator' : 'cargo',
+      vehicleType: driver.vehicleType || 'M',
+      serviceVehicleType: driver.serviceVehicleType || 'STANDARD',
+      baseLocation: driver.baseLocation || '',
+      workingDays: driver.workingDays || ['MON', 'TUE', 'WED', 'THU', 'FRI'],
+      workingHoursStart: driver.workingHours?.start || '09:00',
+      workingHoursEnd: driver.workingHours?.end || '18:00',
     });
     setShowModal(true);
   };
@@ -90,7 +147,7 @@ export default function DriversPage() {
   const closeModal = () => {
     setShowModal(false);
     setEditingDriver(null);
-    setFormData({ name: '', phone: '', vehicleType: 'M' });
+    setFormData(defaultFormData);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -99,19 +156,28 @@ export default function DriversPage() {
 
     setIsSaving(true);
     try {
+      const driverData = {
+        name: formData.name,
+        phone: formData.phone,
+        baseLocation: formData.baseLocation,
+        workingDays: formData.workingDays,
+        workingHours: {
+          start: formData.workingHoursStart,
+          end: formData.workingHoursEnd,
+        },
+        ...(formData.driverType === 'cargo'
+          ? { vehicleType: formData.vehicleType }
+          : { serviceVehicleType: formData.serviceVehicleType }
+        ),
+      };
+
       if (editingDriver) {
         // Update existing driver
-        await updateDoc(doc(db, 'drivers', editingDriver.id), {
-          name: formData.name,
-          phone: formData.phone,
-          vehicleType: formData.vehicleType,
-        });
+        await updateDoc(doc(db, 'drivers', editingDriver.id), driverData);
       } else {
         // Add new driver
         await addDoc(collection(db, 'drivers'), {
-          name: formData.name,
-          phone: formData.phone,
-          vehicleType: formData.vehicleType,
+          ...driverData,
           createdAt: Timestamp.now(),
         });
       }
@@ -132,9 +198,40 @@ export default function DriversPage() {
     }
   };
 
-  const getVehicleLabel = (value: string) => {
-    return vehicleTypes.find((v) => v.value === value)?.label || value;
+  const toggleWorkingDay = (day: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      workingDays: prev.workingDays.includes(day)
+        ? prev.workingDays.filter((d) => d !== day)
+        : [...prev.workingDays, day],
+    }));
   };
+
+  const getVehicleLabel = (driver: Driver) => {
+    if (driver.serviceVehicleType) {
+      return SERVICE_VEHICLE_LABELS[driver.serviceVehicleType];
+    }
+    const cargoType = cargoVehicleTypes.find((v) => v.value === driver.vehicleType);
+    return cargoType?.label || driver.vehicleType || '-';
+  };
+
+  const isEvacuatorDriver = (driver: Driver) => !!driver.serviceVehicleType;
+
+  const getWorkingDaysLabel = (days?: string[]) => {
+    if (!days || days.length === 0) return '-';
+    if (days.length === 7) return 'ყოველდღე';
+    if (days.length === 5 && !days.includes('SAT') && !days.includes('SUN')) {
+      return 'ორშ-პარ';
+    }
+    return days.map((d) => weekDays.find((w) => w.value === d)?.label).join(', ');
+  };
+
+  // Filter drivers
+  const filteredDrivers = drivers.filter((driver) => {
+    if (filterType === 'all') return true;
+    if (filterType === 'evacuator') return isEvacuatorDriver(driver);
+    return !isEvacuatorDriver(driver);
+  });
 
   if (isLoading) {
     return (
@@ -161,8 +258,42 @@ export default function DriversPage() {
         </button>
       </div>
 
+      {/* Filters */}
+      <div className="flex space-x-2">
+        <button
+          onClick={() => setFilterType('all')}
+          className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+            filterType === 'all'
+              ? 'bg-blue-600 text-white'
+              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+          }`}
+        >
+          ყველა ({drivers.length})
+        </button>
+        <button
+          onClick={() => setFilterType('evacuator')}
+          className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+            filterType === 'evacuator'
+              ? 'bg-orange-500 text-white'
+              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+          }`}
+        >
+          ევაკუატორი ({drivers.filter(isEvacuatorDriver).length})
+        </button>
+        <button
+          onClick={() => setFilterType('cargo')}
+          className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+            filterType === 'cargo'
+              ? 'bg-blue-600 text-white'
+              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+          }`}
+        >
+          ტვირთი ({drivers.filter((d) => !isEvacuatorDriver(d)).length})
+        </button>
+      </div>
+
       {/* Drivers Grid */}
-      {drivers.length === 0 ? (
+      {filteredDrivers.length === 0 ? (
         <div className="bg-white rounded-xl p-12 text-center shadow-sm border border-gray-100">
           <User className="w-12 h-12 mx-auto mb-4 text-gray-300" />
           <p className="text-gray-500">მძღოლები არ არის დამატებული</p>
@@ -175,15 +306,21 @@ export default function DriversPage() {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {drivers.map((driver) => (
+          {filteredDrivers.map((driver) => (
             <div
               key={driver.id}
-              className="bg-white rounded-xl p-6 shadow-sm border border-gray-100"
+              className={`bg-white rounded-xl p-6 shadow-sm border ${
+                isEvacuatorDriver(driver) ? 'border-orange-200' : 'border-gray-100'
+              }`}
             >
               <div className="flex items-start justify-between">
                 <div className="flex items-center space-x-3">
-                  <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                    <User className="w-6 h-6 text-blue-600" />
+                  <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
+                    isEvacuatorDriver(driver) ? 'bg-orange-100' : 'bg-blue-100'
+                  }`}>
+                    <User className={`w-6 h-6 ${
+                      isEvacuatorDriver(driver) ? 'text-orange-600' : 'text-blue-600'
+                    }`} />
                   </div>
                   <div>
                     <h3 className="font-semibold text-gray-800">{driver.name}</h3>
@@ -213,11 +350,30 @@ export default function DriversPage() {
                 </div>
               </div>
 
-              <div className="mt-4 pt-4 border-t border-gray-100">
+              <div className="mt-4 pt-4 border-t border-gray-100 space-y-2">
                 <div className="flex items-center text-sm text-gray-500">
                   <Truck className="w-4 h-4 mr-2" />
-                  <span>{getVehicleLabel(driver.vehicleType)}</span>
+                  <span>{getVehicleLabel(driver)}</span>
                 </div>
+
+                {driver.baseLocation && (
+                  <div className="flex items-center text-sm text-gray-500">
+                    <MapPin className="w-4 h-4 mr-2" />
+                    <span>{driver.baseLocation}</span>
+                  </div>
+                )}
+                {driver.workingDays && (
+                  <div className="flex items-center text-sm text-gray-500">
+                    <Calendar className="w-4 h-4 mr-2" />
+                    <span>{getWorkingDaysLabel(driver.workingDays)}</span>
+                  </div>
+                )}
+                {driver.workingHours && (
+                  <div className="flex items-center text-sm text-gray-500">
+                    <Clock className="w-4 h-4 mr-2" />
+                    <span>{driver.workingHours.start} - {driver.workingHours.end}</span>
+                  </div>
+                )}
               </div>
 
               {/* Delete Confirmation */}
@@ -248,8 +404,8 @@ export default function DriversPage() {
       {/* Add/Edit Modal */}
       {showModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl w-full max-w-md shadow-xl">
-            <div className="flex items-center justify-between p-6 border-b border-gray-100">
+          <div className="bg-white rounded-xl w-full max-w-md shadow-xl max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between p-6 border-b border-gray-100 sticky top-0 bg-white">
               <h2 className="text-lg font-semibold text-gray-800">
                 {editingDriver ? 'მძღოლის რედაქტირება' : 'ახალი მძღოლი'}
               </h2>
@@ -262,6 +418,37 @@ export default function DriversPage() {
             </div>
 
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
+              {/* Driver Type Toggle */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  მძღოლის ტიპი
+                </label>
+                <div className="flex space-x-2">
+                  <button
+                    type="button"
+                    onClick={() => setFormData({ ...formData, driverType: 'evacuator' })}
+                    className={`flex-1 py-2 px-4 rounded-lg font-medium transition-colors ${
+                      formData.driverType === 'evacuator'
+                        ? 'bg-orange-500 text-white'
+                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    }`}
+                  >
+                    ევაკუატორი
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setFormData({ ...formData, driverType: 'cargo' })}
+                    className={`flex-1 py-2 px-4 rounded-lg font-medium transition-colors ${
+                      formData.driverType === 'cargo'
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    }`}
+                  >
+                    ტვირთი
+                  </button>
+                </div>
+              </div>
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   სახელი
@@ -296,25 +483,185 @@ export default function DriversPage() {
                 </div>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  ტრანსპორტის ტიპი
-                </label>
-                <div className="relative">
-                  <Truck className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                  <select
-                    value={formData.vehicleType}
-                    onChange={(e) => setFormData({ ...formData, vehicleType: e.target.value })}
-                    className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none appearance-none bg-white text-gray-900"
-                  >
-                    {vehicleTypes.map((type) => (
-                      <option key={type.value} value={type.value}>
-                        {type.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
+              {/* Cargo-specific fields */}
+              {formData.driverType === 'cargo' && (
+                <>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      ტვირთის ზომა
+                    </label>
+                    <div className="relative">
+                      <Truck className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                      <select
+                        value={formData.vehicleType}
+                        onChange={(e) => setFormData({ ...formData, vehicleType: e.target.value })}
+                        className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none appearance-none bg-white text-gray-900"
+                      >
+                        {cargoVehicleTypes.map((type) => (
+                          <option key={type.value} value={type.value}>
+                            {type.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      საბაზო ლოკაცია
+                    </label>
+                    <div className="relative">
+                      <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                      <input
+                        type="text"
+                        value={formData.baseLocation}
+                        onChange={(e) => setFormData({ ...formData, baseLocation: e.target.value })}
+                        placeholder="მაგ: ვაკე, თბილისი"
+                        className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-gray-900 placeholder:text-gray-400 bg-white"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      სამუშაო დღეები
+                    </label>
+                    <div className="flex flex-wrap gap-2">
+                      {weekDays.map((day) => (
+                        <button
+                          key={day.value}
+                          type="button"
+                          onClick={() => toggleWorkingDay(day.value)}
+                          className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                            formData.workingDays.includes(day.value)
+                              ? 'bg-blue-600 text-white'
+                              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                          }`}
+                        >
+                          {day.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      სამუშაო საათები
+                    </label>
+                    <div className="flex items-center space-x-2">
+                      <div className="relative flex-1">
+                        <Clock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                        <input
+                          type="time"
+                          value={formData.workingHoursStart}
+                          onChange={(e) => setFormData({ ...formData, workingHoursStart: e.target.value })}
+                          className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-gray-900 bg-white"
+                        />
+                      </div>
+                      <span className="text-gray-400">-</span>
+                      <div className="relative flex-1">
+                        <Clock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                        <input
+                          type="time"
+                          value={formData.workingHoursEnd}
+                          onChange={(e) => setFormData({ ...formData, workingHoursEnd: e.target.value })}
+                          className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-gray-900 bg-white"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {/* Evacuator-specific fields */}
+              {formData.driverType === 'evacuator' && (
+                <>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      ევაკუატორის ტიპი
+                    </label>
+                    <div className="relative">
+                      <Truck className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                      <select
+                        value={formData.serviceVehicleType}
+                        onChange={(e) => setFormData({ ...formData, serviceVehicleType: e.target.value as ServiceVehicleType })}
+                        className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none appearance-none bg-white text-gray-900"
+                      >
+                        {serviceVehicleTypes.map((type) => (
+                          <option key={type.value} value={type.value}>
+                            {type.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      საბაზო ლოკაცია
+                    </label>
+                    <div className="relative">
+                      <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                      <input
+                        type="text"
+                        value={formData.baseLocation}
+                        onChange={(e) => setFormData({ ...formData, baseLocation: e.target.value })}
+                        placeholder="მაგ: ვაკე, თბილისი"
+                        className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-gray-900 placeholder:text-gray-400 bg-white"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      სამუშაო დღეები
+                    </label>
+                    <div className="flex flex-wrap gap-2">
+                      {weekDays.map((day) => (
+                        <button
+                          key={day.value}
+                          type="button"
+                          onClick={() => toggleWorkingDay(day.value)}
+                          className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                            formData.workingDays.includes(day.value)
+                              ? 'bg-orange-500 text-white'
+                              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                          }`}
+                        >
+                          {day.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      სამუშაო საათები
+                    </label>
+                    <div className="flex items-center space-x-2">
+                      <div className="relative flex-1">
+                        <Clock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                        <input
+                          type="time"
+                          value={formData.workingHoursStart}
+                          onChange={(e) => setFormData({ ...formData, workingHoursStart: e.target.value })}
+                          className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-gray-900 bg-white"
+                        />
+                      </div>
+                      <span className="text-gray-400">-</span>
+                      <div className="relative flex-1">
+                        <Clock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                        <input
+                          type="time"
+                          value={formData.workingHoursEnd}
+                          onChange={(e) => setFormData({ ...formData, workingHoursEnd: e.target.value })}
+                          className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-gray-900 bg-white"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </>
+              )}
 
               <div className="flex space-x-3 pt-4">
                 <button
@@ -327,7 +674,11 @@ export default function DriversPage() {
                 <button
                   type="submit"
                   disabled={isSaving}
-                  className="flex-1 flex items-center justify-center space-x-2 px-4 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white rounded-lg transition-colors"
+                  className={`flex-1 flex items-center justify-center space-x-2 px-4 py-3 text-white rounded-lg transition-colors ${
+                    formData.driverType === 'evacuator'
+                      ? 'bg-orange-500 hover:bg-orange-600 disabled:bg-orange-400'
+                      : 'bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400'
+                  }`}
                 >
                   {isSaving ? (
                     <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent" />

@@ -3,7 +3,7 @@
 import { useState, useCallback } from 'react';
 import { collection, addDoc, Timestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { ServiceType, CargoSize, EvacuatorType, Location, Order } from '@/lib/types';
+import { ServiceType, CargoSize, EvacuatorType, Location, Order, CustomerVehicleType, ServiceVehicleType, EvacuatorAnswers, SERVICE_VEHICLE_LABELS, CUSTOMER_VEHICLE_LABELS } from '@/lib/types';
 import { usePricing } from '@/hooks/usePricing';
 
 import GoogleMapsProvider from '@/components/GoogleMapsProvider';
@@ -13,12 +13,15 @@ import LocationPicker from '@/components/LocationPicker';
 import DateTimePicker from '@/components/DateTimePicker';
 import OrderForm from '@/components/OrderForm';
 import OrderConfirmation from '@/components/OrderConfirmation';
+import EvacuatorTypeSelector from '@/components/EvacuatorTypeSelector';
+import EvacuatorQuestionnaire, { needsQuestionnaire, getDirectServiceType } from '@/components/EvacuatorQuestionnaire';
 
-type Step = 1 | 2 | 3 | 4 | 5 | 6;
+type Step = 1 | 2 | 2.5 | 3 | 4 | 5 | 6;
 
 const stepTitles: Record<Step, string> = {
   1: 'სერვისი',
   2: 'ტიპი',
+  2.5: 'კითხვარი',
   3: 'მისამართი',
   4: 'დრო',
   5: 'დადასტურება',
@@ -39,17 +42,24 @@ export default function Home() {
   const [scheduledTime, setScheduledTime] = useState<Date | null>(null);
   const [phone, setPhone] = useState('');
 
+  // New evacuator flow state
+  const [customerVehicleType, setCustomerVehicleType] = useState<CustomerVehicleType | null>(null);
+  const [serviceVehicleType, setServiceVehicleType] = useState<ServiceVehicleType | null>(null);
+  const [evacuatorAnswers, setEvacuatorAnswers] = useState<EvacuatorAnswers>({});
+
   // UI state
   const [isLoading, setIsLoading] = useState(false);
   const [completedOrder, setCompletedOrder] = useState<Order | null>(null);
 
   // Get pricing from Firestore
-  const { calculatePrice } = usePricing();
+  const { calculatePrice, calculateServiceVehiclePrice } = usePricing();
 
-  // Calculate price
-  const price = serviceType && subType && distance
-    ? calculatePrice(serviceType, subType, distance)
-    : { customerPrice: 0, driverPrice: 0, profit: 0 };
+  // Calculate price - use new service vehicle pricing for evacuator
+  const price = serviceType === 'evacuator' && serviceVehicleType && distance
+    ? calculateServiceVehiclePrice(serviceVehicleType, distance)
+    : serviceType && subType && distance
+      ? calculatePrice(serviceType, subType, distance)
+      : { customerPrice: 0, driverPrice: 0, profit: 0 };
 
   // Handlers
   const handleServiceSelect = (type: ServiceType) => {
@@ -57,8 +67,29 @@ export default function Home() {
     setCurrentStep(2);
   };
 
-  const handleSubTypeSelect = (type: CargoSize | EvacuatorType) => {
+  const handleSubTypeSelect = (type: CargoSize) => {
     setSubType(type);
+    setCurrentStep(3);
+  };
+
+  // New evacuator flow handlers
+  const handleCustomerVehicleSelect = (type: CustomerVehicleType) => {
+    setCustomerVehicleType(type);
+
+    // Check if questionnaire is needed
+    if (needsQuestionnaire(type)) {
+      setCurrentStep(2.5);
+    } else {
+      // Directly determine service type and proceed
+      const svcType = getDirectServiceType(type);
+      setServiceVehicleType(svcType);
+      setCurrentStep(3);
+    }
+  };
+
+  const handleQuestionnaireComplete = (answers: EvacuatorAnswers, svcType: ServiceVehicleType) => {
+    setEvacuatorAnswers(answers);
+    setServiceVehicleType(svcType);
     setCurrentStep(3);
   };
 
@@ -73,13 +104,25 @@ export default function Home() {
   };
 
   const handleBack = useCallback(() => {
-    if (currentStep > 1) {
+    if (currentStep === 2.5) {
+      // From questionnaire, go back to vehicle type selection
+      setCurrentStep(2);
+    } else if (currentStep === 3 && serviceType === 'evacuator') {
+      // From location picker in evacuator flow
+      if (customerVehicleType && needsQuestionnaire(customerVehicleType)) {
+        setCurrentStep(2.5);
+      } else {
+        setCurrentStep(2);
+      }
+    } else if (currentStep > 1) {
       setCurrentStep((prev) => (prev - 1) as Step);
     }
-  }, [currentStep]);
+  }, [currentStep, serviceType, customerVehicleType]);
 
   const handleSubmit = async () => {
-    if (!serviceType || !subType || !pickup || !dropoff || !distance || !phone) {
+    // For evacuator, we need serviceVehicleType instead of subType
+    const isEvacuator = serviceType === 'evacuator';
+    if (!serviceType || (!isEvacuator && !subType) || (isEvacuator && !serviceVehicleType) || !pickup || !dropoff || !distance || !phone) {
       return;
     }
 
@@ -89,7 +132,12 @@ export default function Home() {
       // Create order object
       const orderData = {
         serviceType,
-        subType,
+        subType: isEvacuator ? serviceVehicleType : subType,
+        ...(isEvacuator && {
+          customerVehicleType,
+          serviceVehicleType,
+          evacuatorAnswers,
+        }),
         pickup,
         dropoff,
         distance,
@@ -117,7 +165,11 @@ export default function Home() {
             serviceType,
             subType,
             pickupAddress: pickup.address,
+            pickupLat: pickup.lat,
+            pickupLng: pickup.lng,
             dropoffAddress: dropoff.address,
+            dropoffLat: dropoff.lat,
+            dropoffLng: dropoff.lng,
             customerPrice: price.customerPrice,
             phone,
             distance,
@@ -140,7 +192,12 @@ export default function Home() {
       const order: Order = {
         id: docRef.id,
         serviceType,
-        subType,
+        subType: isEvacuator ? serviceVehicleType! : subType!,
+        ...(isEvacuator && {
+          customerVehicleType: customerVehicleType!,
+          serviceVehicleType: serviceVehicleType!,
+          evacuatorAnswers,
+        }),
         pickup,
         dropoff,
         distance,
@@ -174,6 +231,10 @@ export default function Home() {
     setScheduledTime(null);
     setPhone('');
     setCompletedOrder(null);
+    // Reset new evacuator flow state
+    setCustomerVehicleType(null);
+    setServiceVehicleType(null);
+    setEvacuatorAnswers({});
   };
 
   // Check if can proceed from location step
@@ -271,11 +332,28 @@ export default function Home() {
           {/* Step 1: Service Selection */}
           {currentStep === 1 && <ServiceSelector onSelect={handleServiceSelect} />}
 
-          {/* Step 2: SubType Selection */}
-          {currentStep === 2 && serviceType && (
+          {/* Step 2: SubType Selection (Cargo) or Vehicle Type Selection (Evacuator) */}
+          {currentStep === 2 && serviceType === 'cargo' && (
             <SubTypeSelector
-              serviceType={serviceType}
               onSelect={handleSubTypeSelect}
+              onBack={handleBack}
+            />
+          )}
+
+          {/* Step 2: Evacuator Vehicle Type Selection */}
+          {currentStep === 2 && serviceType === 'evacuator' && (
+            <EvacuatorTypeSelector
+              selected={customerVehicleType}
+              onSelect={handleCustomerVehicleSelect}
+              onBack={handleBack}
+            />
+          )}
+
+          {/* Step 2.5: Evacuator Questionnaire */}
+          {currentStep === 2.5 && serviceType === 'evacuator' && customerVehicleType && (
+            <EvacuatorQuestionnaire
+              vehicleType={customerVehicleType}
+              onComplete={handleQuestionnaireComplete}
               onBack={handleBack}
             />
           )}
@@ -469,9 +547,25 @@ export default function Home() {
                   <div className="flex justify-between">
                     <span className="text-gray-500">სერვისი:</span>
                     <span className="font-medium">
-                      {serviceType === 'cargo' ? 'ტვირთი' : 'ევაკუატორი'} ({subType})
+                      {serviceType === 'cargo' ? `ტვირთი (${subType})` : 'ევაკუატორი'}
                     </span>
                   </div>
+                  {serviceType === 'evacuator' && customerVehicleType && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">ავტომობილი:</span>
+                      <span className="font-medium">
+                        {CUSTOMER_VEHICLE_LABELS[customerVehicleType].title}
+                      </span>
+                    </div>
+                  )}
+                  {serviceType === 'evacuator' && serviceVehicleType && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">ევაკუატორი:</span>
+                      <span className="font-medium">
+                        {SERVICE_VEHICLE_LABELS[serviceVehicleType]}
+                      </span>
+                    </div>
+                  )}
                   <div className="flex justify-between">
                     <span className="text-gray-500">მანძილი:</span>
                     <span className="font-medium">{distance} კმ</span>

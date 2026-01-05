@@ -43,7 +43,7 @@ export const CARGO_PRICES: Record<string, PriceInfo> = {
   },
 };
 
-// Evacuator vehicle prices
+// Legacy Evacuator vehicle prices (kept for backward compatibility)
 export const EVACUATOR_PRICES: Record<string, PriceInfo> = {
   LIGHT: {
     customerPrice: 80,
@@ -74,5 +74,45 @@ export const EVACUATOR_PRICES: Record<string, PriceInfo> = {
     driverPrice: 300,
     profit: 50,
     perKm: 10.00,
+  },
+};
+
+// New Service Vehicle Type prices (based on what evacuator is needed)
+export const SERVICE_VEHICLE_PRICES: Record<string, PriceInfo> = {
+  STANDARD: {
+    customerPrice: 80,
+    driverPrice: 70,
+    profit: 10,
+    perKm: 2.30,
+  },
+  SPIDER: {
+    customerPrice: 130,
+    driverPrice: 120,
+    profit: 10,
+    perKm: 2.80,
+  },
+  LOWBOY: {
+    customerPrice: 350,
+    driverPrice: 300,
+    profit: 50,
+    perKm: 10.00,
+  },
+  HEAVY_MANIPULATOR: {
+    customerPrice: 200,
+    driverPrice: 180,
+    profit: 20,
+    perKm: 5.00,
+  },
+  LONG_BED: {
+    customerPrice: 100,
+    driverPrice: 90,
+    profit: 10,
+    perKm: 2.70,
+  },
+  MOTO_CARRIER: {
+    customerPrice: 60,
+    driverPrice: 50,
+    profit: 10,
+    perKm: 1.50,
   },
 };
