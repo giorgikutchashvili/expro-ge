@@ -1,45 +1,20 @@
+import React from 'react';
+
 interface TowTruckIconProps {
   className?: string;
 }
 
-export default function TowTruckIcon({ className }: TowTruckIconProps) {
+export const TowTruckIcon: React.FC<TowTruckIconProps> = ({ className = "w-8 h-8" }) => {
   return (
     <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 -960 960 960"
+      fill="currentColor"
       className={className}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
     >
-      {/* Truck cabin */}
-      <path d="M12 17V9H5a1 1 0 00-1 1v6a1 1 0 001 1h1" />
-
-      {/* Cab window */}
-      <path d="M5 11h5v3H5" />
-
-      {/* Flatbed platform */}
-      <path d="M12 14h9" />
-      <path d="M12 17h7" />
-
-      {/* Flatbed support */}
-      <path d="M19 14v3" />
-
-      {/* Ramp/tilt indicator */}
-      <path d="M21 14l-2 3" />
-
-      {/* Towed car silhouette on flatbed */}
-      <path d="M13 11h4a1 1 0 011 1v2h-6v-2a1 1 0 011-1z" />
-      <circle cx="14" cy="14" r="0.5" fill="currentColor" />
-      <circle cx="17" cy="14" r="0.5" fill="currentColor" />
-
-      {/* Main wheels */}
-      <circle cx="7" cy="17" r="2" />
-      <circle cx="17" cy="17" r="2" />
-
-      {/* Wheel connector */}
-      <path d="M9 17h6" />
+      <path d="M40-268v-120h440L100-682v147H40v-225h40l474 261v-301h166l200 240v292h-97q0 45-31.5 76.5T715-160q-45 0-76.5-31.5T607-268H349q0 45-31.5 76.5T241-160q-45 0-76.5-31.5T133-268H40Zm201 65q27 0 46-19t19-46q0-27-19-46t-46-19q-27 0-46 19t-19 46q0 27 19 46t46 19Zm474 0q27 0 46-19t19-46q0-27-19-46t-46-19q-27 0-46 19t-19 46q0 27 19 46t46 19ZM614-560h228L692-740h-78v180Z"/>
     </svg>
   );
-}
+};
+
+export default TowTruckIcon;

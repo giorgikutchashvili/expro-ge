@@ -19,12 +19,12 @@ import {
   X,
   User,
   Phone,
-  Truck,
   Save,
   MapPin,
   Clock,
   Calendar,
 } from 'lucide-react';
+import { CargoTruckIcon, TowTruckIcon } from '@/components/icons';
 
 interface Driver {
   id: string;
@@ -352,7 +352,11 @@ export default function DriversPage() {
 
               <div className="mt-4 pt-4 border-t border-gray-100 space-y-2">
                 <div className="flex items-center text-sm text-gray-500">
-                  <Truck className="w-4 h-4 mr-2" />
+                  {isEvacuatorDriver(driver) ? (
+                    <TowTruckIcon className="w-4 h-4 mr-2" />
+                  ) : (
+                    <CargoTruckIcon className="w-4 h-4 mr-2" />
+                  )}
                   <span>{getVehicleLabel(driver)}</span>
                 </div>
 
@@ -491,7 +495,7 @@ export default function DriversPage() {
                       ტვირთის ზომა
                     </label>
                     <div className="relative">
-                      <Truck className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                      <CargoTruckIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                       <select
                         value={formData.vehicleType}
                         onChange={(e) => setFormData({ ...formData, vehicleType: e.target.value })}
@@ -581,7 +585,7 @@ export default function DriversPage() {
                       ევაკუატორის ტიპი
                     </label>
                     <div className="relative">
-                      <Truck className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                      <TowTruckIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                       <select
                         value={formData.serviceVehicleType}
                         onChange={(e) => setFormData({ ...formData, serviceVehicleType: e.target.value as ServiceVehicleType })}

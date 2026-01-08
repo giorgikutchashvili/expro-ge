@@ -5,7 +5,9 @@ import { useParams, useRouter } from 'next/navigation';
 import { doc, getDoc, updateDoc, collection, getDocs, Timestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { formatPrice } from '@/lib/utils';
-import { ServiceVehicleType, CustomerVehicleType, EvacuatorAnswers, SERVICE_VEHICLE_LABELS, CUSTOMER_VEHICLE_LABELS } from '@/lib/types';
+import { ServiceVehicleType, CustomerVehicleType, EvacuatorAnswers, SERVICE_VEHICLE_LABELS, CUSTOMER_VEHICLE_LABELS, CargoSize } from '@/lib/types';
+import { usePricing } from '@/hooks/usePricing';
+import { TBILISI_FIXED_ZONE_KM } from '@/lib/constants';
 import { GoogleMap, Marker, DirectionsRenderer } from '@react-google-maps/api';
 import { useGoogleMaps } from '@/components/GoogleMapsProvider';
 import Link from 'next/link';
@@ -95,6 +97,7 @@ export default function OrderDetailsPage() {
   const params = useParams();
   const router = useRouter();
   const { isLoaded } = useGoogleMaps();
+  const { calculateDetailedPrice, settings } = usePricing();
   const orderId = params.id as string;
 
   const [order, setOrder] = useState<Order | null>(null);
@@ -601,26 +604,109 @@ export default function OrderDetailsPage() {
           <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
             <h3 className="font-semibold text-gray-800 mb-4">ფინანსები</h3>
 
-            <div className="space-y-3">
-              <div className="flex justify-between items-center">
-                <span className="text-gray-500">კლიენტი იხდის:</span>
-                <span className="text-xl font-bold text-gray-800">
-                  {formatPrice(order.customerPrice)}
-                </span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-gray-500">მძღოლის წილი:</span>
-                <span className="font-semibold text-gray-700">
-                  {formatPrice(order.driverPrice)}
-                </span>
-              </div>
-              <div className="pt-3 border-t border-gray-100 flex justify-between items-center">
-                <span className="text-gray-500">მოგება:</span>
-                <span className="text-lg font-bold text-green-600">
-                  {formatPrice(order.customerPrice - order.driverPrice)}
-                </span>
-              </div>
-            </div>
+            {(() => {
+              // Calculate detailed pricing based on order type
+              const isServiceVehicle = order.serviceType === 'evacuator' && order.serviceVehicleType;
+              const subType = isServiceVehicle ? order.serviceVehicleType! : order.subType as CargoSize;
+              const detailedPrice = calculateDetailedPrice(
+                order.serviceType,
+                subType,
+                order.distance,
+                !!isServiceVehicle
+              );
+              const baseKm = settings.tbilisiFixedZoneKm || TBILISI_FIXED_ZONE_KM;
+
+              return (
+                <div className="space-y-3">
+                  {/* Show breakdown for orders over base km */}
+                  {detailedPrice.isOverBase ? (
+                    <>
+                      {/* Base price */}
+                      <div className="p-3 bg-gray-50 rounded-lg space-y-2">
+                        <p className="text-xs font-medium text-gray-500 uppercase">ფიქსირებული ({baseKm} კმ)</p>
+                        <div className="flex justify-between items-center text-sm">
+                          <span className="text-gray-600">კლიენტი:</span>
+                          <span className="font-medium text-gray-800">{formatPrice(detailedPrice.baseCustomerPrice)}</span>
+                        </div>
+                        <div className="flex justify-between items-center text-sm">
+                          <span className="text-gray-600">მძღოლი:</span>
+                          <span className="font-medium text-gray-700">{formatPrice(detailedPrice.baseDriverPrice)}</span>
+                        </div>
+                        <div className="flex justify-between items-center text-sm">
+                          <span className="text-gray-600">მოგება:</span>
+                          <span className="font-medium text-green-600">{formatPrice(detailedPrice.baseProfit)}</span>
+                        </div>
+                      </div>
+
+                      {/* Extra km charges */}
+                      <div className="p-3 bg-blue-50 rounded-lg space-y-2">
+                        <p className="text-xs font-medium text-blue-600 uppercase">დამატებითი +{Math.round(detailedPrice.extraKm)} კმ</p>
+                        <div className="flex justify-between items-center text-sm">
+                          <span className="text-gray-600">კლიენტი:</span>
+                          <span className="font-medium text-gray-800">+{formatPrice(detailedPrice.extraCustomerCharge)}</span>
+                        </div>
+                        <div className="flex justify-between items-center text-sm">
+                          <span className="text-gray-600">მძღოლი:</span>
+                          <span className="font-medium text-gray-700">+{formatPrice(detailedPrice.extraDriverCharge)}</span>
+                        </div>
+                        <div className="flex justify-between items-center text-sm">
+                          <span className="text-gray-600">მოგება:</span>
+                          <span className="font-medium text-green-600">+{formatPrice(detailedPrice.extraProfit)}</span>
+                        </div>
+                      </div>
+
+                      {/* Totals */}
+                      <div className="pt-3 border-t border-gray-200 space-y-2">
+                        <p className="text-xs font-medium text-gray-500 uppercase">სულ ({order.distance} კმ)</p>
+                        <div className="flex justify-between items-center">
+                          <span className="text-gray-500">კლიენტი იხდის:</span>
+                          <span className="text-xl font-bold text-gray-800">
+                            {formatPrice(order.customerPrice)}
+                          </span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-gray-500">მძღოლის წილი:</span>
+                          <span className="font-semibold text-gray-700">
+                            {formatPrice(order.driverPrice)}
+                          </span>
+                        </div>
+                        <div className="pt-2 border-t border-gray-100 flex justify-between items-center">
+                          <span className="text-gray-500">სულ მოგება:</span>
+                          <span className="text-lg font-bold text-green-600">
+                            {formatPrice(order.customerPrice - order.driverPrice)}
+                          </span>
+                        </div>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      {/* Simple display for orders within base km */}
+                      <div className="flex justify-between items-center">
+                        <span className="text-gray-500">კლიენტი იხდის:</span>
+                        <span className="text-xl font-bold text-gray-800">
+                          {formatPrice(order.customerPrice)}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-gray-500">მძღოლის წილი:</span>
+                        <span className="font-semibold text-gray-700">
+                          {formatPrice(order.driverPrice)}
+                        </span>
+                      </div>
+                      <div className="pt-3 border-t border-gray-100 flex justify-between items-center">
+                        <span className="text-gray-500">მოგება:</span>
+                        <span className="text-lg font-bold text-green-600">
+                          {formatPrice(order.customerPrice - order.driverPrice)}
+                        </span>
+                      </div>
+                      <p className="text-xs text-gray-400 text-center pt-2">
+                        ფიქსირებული ზონაში ({order.distance} კმ / {baseKm} კმ)
+                      </p>
+                    </>
+                  )}
+                </div>
+              );
+            })()}
           </div>
 
           {/* Status */}

@@ -1,37 +1,20 @@
+import React from 'react';
+
 interface CargoTruckIconProps {
   className?: string;
 }
 
-export default function CargoTruckIcon({ className }: CargoTruckIconProps) {
+export const CargoTruckIcon: React.FC<CargoTruckIconProps> = ({ className = "w-8 h-8" }) => {
   return (
     <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 -960 960 960"
+      fill="currentColor"
       className={className}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
     >
-      {/* Truck cabin */}
-      <path d="M14 17V5H4a1 1 0 00-1 1v10a1 1 0 001 1h1" />
-
-      {/* Front cab with window */}
-      <path d="M14 17h-3" />
-      <path d="M14 8h2.5a1 1 0 01.8.4l2.5 3.3a1 1 0 01.2.6V16a1 1 0 01-1 1h-1" />
-
-      {/* Cab window */}
-      <path d="M14 8v5h4" />
-
-      {/* Cargo box on back */}
-      <rect x="3" y="5" width="11" height="8" rx="0.5" />
-
-      {/* Wheels */}
-      <circle cx="7" cy="17" r="2" />
-      <circle cx="17" cy="17" r="2" />
-
-      {/* Wheel connectors */}
-      <path d="M9 17h5" />
+      <path d="M224.12-161q-49.12 0-83.62-34.42Q106-229.83 106-279H40v-461q0-24 18-42t42-18h579v167h105l136 181v173h-71q0 49.17-34.38 83.58Q780.24-161 731.12-161t-83.62-34.42Q613-229.83 613-279H342q0 49-34.38 83.5t-83.5 34.5Zm-.12-60q24 0 41-17t17-41q0-24-17-41t-41-17q-24 0-41 17t-17 41q0 24 17 41t41 17ZM100-339h22q17-27 43.04-43t58-16q31.96 0 58.46 16.5T325-339h294v-401H100v401Zm631 118q24 0 41-17t17-41q0-24-17-41t-41-17q-24 0-41 17t-17 41q0 24 17 41t41 17Zm-52-204h186L754-573h-75v148ZM360-529Z"/>
     </svg>
   );
-}
+};
+
+export default CargoTruckIcon;

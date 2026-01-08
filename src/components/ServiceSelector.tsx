@@ -1,39 +1,10 @@
 'use client';
 
 import { ServiceType } from '@/lib/types';
+import { CargoTruckIcon, TowTruckIcon } from '@/components/icons';
 
 interface ServiceSelectorProps {
   onSelect: (serviceType: ServiceType) => void;
-}
-
-// Cargo truck icon
-function CargoTruckIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="1" y="8" width="15" height="9" rx="1" />
-      <path d="M16 12h4a1 1 0 011 1v4" />
-      <circle cx="5.5" cy="17" r="2" />
-      <circle cx="18.5" cy="17" r="2" />
-      <path d="M7.5 17h9" />
-      <path d="M5 8V6a1 1 0 011-1h6a1 1 0 011 1v2" />
-    </svg>
-  );
-}
-
-// Tow truck icon
-function TowTruckIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M5 17h14" />
-      <path d="M3 15v-2a1 1 0 011-1h1l1.5-5h11L19 12h1a1 1 0 011 1v2" />
-      <path d="M5 17a2 2 0 01-2-2" />
-      <path d="M19 17a2 2 0 002-2" />
-      <circle cx="7" cy="17" r="2" />
-      <circle cx="17" cy="17" r="2" />
-      <path d="M10 7l-2 5" />
-      <path d="M14 7l2 5" />
-    </svg>
-  );
 }
 
 interface ServiceOption {

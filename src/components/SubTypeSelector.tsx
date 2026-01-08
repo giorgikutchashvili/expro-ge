@@ -2,24 +2,11 @@
 
 import { useState } from 'react';
 import { CargoSize, CARGO_SIZE_LABELS } from '@/lib/types';
+import { CargoTruckIcon } from '@/components/icons';
 
 interface SubTypeSelectorProps {
   onSelect: (subType: CargoSize) => void;
   onBack: () => void;
-}
-
-// Cargo truck icon component
-function CargoTruckIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="1" y="8" width="15" height="9" rx="1" />
-      <path d="M16 12h4a1 1 0 011 1v4" />
-      <circle cx="5.5" cy="17" r="2" />
-      <circle cx="18.5" cy="17" r="2" />
-      <path d="M7.5 17h9" />
-      <path d="M5 8V6a1 1 0 011-1h6a1 1 0 011 1v2" />
-    </svg>
-  );
 }
 
 const cargoSizeOrder: CargoSize[] = ['S', 'M', 'L', 'XL', 'CONSTRUCTION'];

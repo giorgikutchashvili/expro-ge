@@ -10,6 +10,7 @@ interface PriceConfig {
   customerPrice: number;
   driverPrice: number;
   perKm: number;
+  perKmProfit: number;
 }
 
 interface PricingSettings {
@@ -25,6 +26,17 @@ interface PriceResult {
   profit: number;
 }
 
+interface DetailedPriceResult extends PriceResult {
+  baseCustomerPrice: number;
+  baseDriverPrice: number;
+  baseProfit: number;
+  extraKm: number;
+  extraCustomerCharge: number;
+  extraDriverCharge: number;
+  extraProfit: number;
+  isOverBase: boolean;
+}
+
 function getDefaultSettings(): PricingSettings {
   const cargoDefaults: Record<string, PriceConfig> = {};
   const evacuatorDefaults: Record<string, PriceConfig> = {};
@@ -35,6 +47,7 @@ function getDefaultSettings(): PricingSettings {
       customerPrice: value.customerPrice,
       driverPrice: value.driverPrice,
       perKm: value.perKm,
+      perKmProfit: value.perKmProfit,
     };
   });
 
@@ -43,6 +56,7 @@ function getDefaultSettings(): PricingSettings {
       customerPrice: value.customerPrice,
       driverPrice: value.driverPrice,
       perKm: value.perKm,
+      perKmProfit: value.perKmProfit,
     };
   });
 
@@ -51,6 +65,7 @@ function getDefaultSettings(): PricingSettings {
       customerPrice: value.customerPrice,
       driverPrice: value.driverPrice,
       perKm: value.perKm,
+      perKmProfit: value.perKmProfit,
     };
   });
 
@@ -104,21 +119,25 @@ export function usePricing() {
         return { customerPrice: 0, driverPrice: 0, profit: 0 };
       }
 
+      const baseProfit = priceInfo.customerPrice - priceInfo.driverPrice;
+
       if (distanceKm <= settings.tbilisiFixedZoneKm) {
         return {
           customerPrice: priceInfo.customerPrice,
           driverPrice: priceInfo.driverPrice,
-          profit: priceInfo.customerPrice - priceInfo.driverPrice,
+          profit: baseProfit,
         };
       }
 
       const extraKm = distanceKm - settings.tbilisiFixedZoneKm;
-      const extraCharge = extraKm * priceInfo.perKm;
+      const extraCustomerCharge = extraKm * priceInfo.perKm;
+      const extraProfit = extraKm * (priceInfo.perKmProfit || 0);
+      const extraDriverCharge = extraCustomerCharge - extraProfit;
 
       return {
-        customerPrice: Math.round(priceInfo.customerPrice + extraCharge),
-        driverPrice: Math.round(priceInfo.driverPrice + extraCharge),
-        profit: priceInfo.customerPrice - priceInfo.driverPrice,
+        customerPrice: Math.round(priceInfo.customerPrice + extraCustomerCharge),
+        driverPrice: Math.round(priceInfo.driverPrice + extraDriverCharge),
+        profit: Math.round(baseProfit + extraProfit),
       };
     },
     [settings]
@@ -132,21 +151,96 @@ export function usePricing() {
         return { customerPrice: 0, driverPrice: 0, profit: 0 };
       }
 
+      const baseProfit = priceInfo.customerPrice - priceInfo.driverPrice;
+
       if (distanceKm <= settings.tbilisiFixedZoneKm) {
         return {
           customerPrice: priceInfo.customerPrice,
           driverPrice: priceInfo.driverPrice,
-          profit: priceInfo.customerPrice - priceInfo.driverPrice,
+          profit: baseProfit,
         };
       }
 
       const extraKm = distanceKm - settings.tbilisiFixedZoneKm;
-      const extraCharge = extraKm * priceInfo.perKm;
+      const extraCustomerCharge = extraKm * priceInfo.perKm;
+      const extraProfit = extraKm * (priceInfo.perKmProfit || 0);
+      const extraDriverCharge = extraCustomerCharge - extraProfit;
 
       return {
-        customerPrice: Math.round(priceInfo.customerPrice + extraCharge),
-        driverPrice: Math.round(priceInfo.driverPrice + extraCharge),
-        profit: priceInfo.customerPrice - priceInfo.driverPrice,
+        customerPrice: Math.round(priceInfo.customerPrice + extraCustomerCharge),
+        driverPrice: Math.round(priceInfo.driverPrice + extraDriverCharge),
+        profit: Math.round(baseProfit + extraProfit),
+      };
+    },
+    [settings]
+  );
+
+  // Detailed price calculation for order details breakdown
+  const calculateDetailedPrice = useCallback(
+    (
+      serviceType: ServiceType,
+      subType: CargoSize | EvacuatorType | ServiceVehicleType,
+      distanceKm: number,
+      isServiceVehicle: boolean = false
+    ): DetailedPriceResult => {
+      const prices = isServiceVehicle
+        ? settings.serviceVehicle
+        : serviceType === 'cargo'
+          ? settings.cargo
+          : settings.evacuator;
+      const priceInfo = prices[subType];
+
+      if (!priceInfo) {
+        return {
+          customerPrice: 0,
+          driverPrice: 0,
+          profit: 0,
+          baseCustomerPrice: 0,
+          baseDriverPrice: 0,
+          baseProfit: 0,
+          extraKm: 0,
+          extraCustomerCharge: 0,
+          extraDriverCharge: 0,
+          extraProfit: 0,
+          isOverBase: false,
+        };
+      }
+
+      const baseProfit = priceInfo.customerPrice - priceInfo.driverPrice;
+
+      if (distanceKm <= settings.tbilisiFixedZoneKm) {
+        return {
+          customerPrice: priceInfo.customerPrice,
+          driverPrice: priceInfo.driverPrice,
+          profit: baseProfit,
+          baseCustomerPrice: priceInfo.customerPrice,
+          baseDriverPrice: priceInfo.driverPrice,
+          baseProfit: baseProfit,
+          extraKm: 0,
+          extraCustomerCharge: 0,
+          extraDriverCharge: 0,
+          extraProfit: 0,
+          isOverBase: false,
+        };
+      }
+
+      const extraKm = distanceKm - settings.tbilisiFixedZoneKm;
+      const extraCustomerCharge = extraKm * priceInfo.perKm;
+      const extraProfit = extraKm * (priceInfo.perKmProfit || 0);
+      const extraDriverCharge = extraCustomerCharge - extraProfit;
+
+      return {
+        customerPrice: Math.round(priceInfo.customerPrice + extraCustomerCharge),
+        driverPrice: Math.round(priceInfo.driverPrice + extraDriverCharge),
+        profit: Math.round(baseProfit + extraProfit),
+        baseCustomerPrice: priceInfo.customerPrice,
+        baseDriverPrice: priceInfo.driverPrice,
+        baseProfit: baseProfit,
+        extraKm: extraKm,
+        extraCustomerCharge: Math.round(extraCustomerCharge),
+        extraDriverCharge: Math.round(extraDriverCharge),
+        extraProfit: Math.round(extraProfit),
+        isOverBase: true,
       };
     },
     [settings]
@@ -157,5 +251,6 @@ export function usePricing() {
     isLoading,
     calculatePrice,
     calculateServiceVehiclePrice,
+    calculateDetailedPrice,
   };
 }
