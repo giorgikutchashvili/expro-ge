@@ -3,7 +3,7 @@
 import { useState, useCallback } from 'react';
 import { collection, addDoc, Timestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { ServiceType, CargoSize, EvacuatorType, Location, Order, CustomerVehicleType, ServiceVehicleType, EvacuatorAnswers, SERVICE_VEHICLE_LABELS, CUSTOMER_VEHICLE_LABELS } from '@/lib/types';
+import { ServiceType, CargoSize, EvacuatorType, Location, Order, CustomerVehicleType, ServiceVehicleType, EvacuatorAnswers, SERVICE_VEHICLE_LABELS, CUSTOMER_VEHICLE_LABELS, PaymentMethodType } from '@/lib/types';
 import { usePricing } from '@/hooks/usePricing';
 
 import GoogleMapsProvider from '@/components/GoogleMapsProvider';
@@ -16,16 +16,16 @@ import OrderConfirmation from '@/components/OrderConfirmation';
 import EvacuatorTypeSelector from '@/components/EvacuatorTypeSelector';
 import EvacuatorQuestionnaire, { needsQuestionnaire, getDirectServiceType } from '@/components/EvacuatorQuestionnaire';
 
-type Step = 1 | 2 | 2.5 | 3 | 4 | 5 | 6;
+type Step = 1 | 2 | 2.5 | 3 | 5 | 6 | 7;
 
 const stepTitles: Record<Step, string> = {
   1: 'სერვისი',
   2: 'ტიპი',
   2.5: 'კითხვარი',
   3: 'მისამართი',
-  4: 'დრო',
-  5: 'დადასტურება',
-  6: 'დასრულება',
+  5: 'დრო',
+  6: 'დადასტურება',
+  7: 'დასრულება',
 };
 
 export default function Home() {
@@ -46,6 +46,9 @@ export default function Home() {
   const [customerVehicleType, setCustomerVehicleType] = useState<CustomerVehicleType | null>(null);
   const [serviceVehicleType, setServiceVehicleType] = useState<ServiceVehicleType | null>(null);
   const [evacuatorAnswers, setEvacuatorAnswers] = useState<EvacuatorAnswers>({});
+
+  // Payment method state - default to 'cash'
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethodType>('cash');
 
   // UI state
   const [isLoading, setIsLoading] = useState(false);
@@ -95,12 +98,16 @@ export default function Home() {
 
   const handleLocationComplete = () => {
     if (pickup && dropoff && distance) {
-      setCurrentStep(4);
+      setCurrentStep(5); // Skip payment step (now in OrderForm), go to date/time
     }
   };
 
+  const handlePaymentMethodChange = (method: PaymentMethodType) => {
+    setPaymentMethod(method);
+  };
+
   const handleDateTimeComplete = () => {
-    setCurrentStep(5);
+    setCurrentStep(6);
   };
 
   const handleBack = useCallback(() => {
@@ -114,6 +121,12 @@ export default function Home() {
       } else {
         setCurrentStep(2);
       }
+    } else if (currentStep === 5) {
+      // From date/time, go back to location
+      setCurrentStep(3);
+    } else if (currentStep === 6) {
+      // From order form, go back to date/time
+      setCurrentStep(5);
     } else if (currentStep > 1) {
       setCurrentStep((prev) => (prev - 1) as Step);
     }
@@ -144,6 +157,7 @@ export default function Home() {
         customerPrice: price.customerPrice,
         driverPrice: price.driverPrice,
         phone,
+        paymentMethod,
         status: 'pending',
         scheduledTime: isScheduled && scheduledTime ? Timestamp.fromDate(scheduledTime) : null,
         createdAt: Timestamp.now(),
@@ -204,13 +218,14 @@ export default function Home() {
         customerPrice: price.customerPrice,
         driverPrice: price.driverPrice,
         phone,
+        paymentMethod,
         status: 'pending',
         scheduledTime: isScheduled && scheduledTime ? scheduledTime : undefined,
         createdAt: new Date(),
       };
 
       setCompletedOrder(order);
-      setCurrentStep(6);
+      setCurrentStep(7);
     } catch (error) {
       console.error('Error submitting order:', error);
       alert('შეკვეთის გაგზავნა ვერ მოხერხდა. გთხოვთ სცადოთ თავიდან.');
@@ -235,6 +250,8 @@ export default function Home() {
     setCustomerVehicleType(null);
     setServiceVehicleType(null);
     setEvacuatorAnswers({});
+    // Reset payment method to default
+    setPaymentMethod('cash');
   };
 
   // Check if can proceed from location step
@@ -242,19 +259,19 @@ export default function Home() {
 
   return (
     <GoogleMapsProvider>
-      <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100">
+      <div className="min-h-screen">
         {/* Header */}
-        <header className="bg-white shadow-sm sticky top-0 z-50">
-          <div className="max-w-4xl mx-auto px-4 py-4">
+        <header className="bg-[#1E293B] shadow-md sticky top-0 z-50 border-b border-[#475569]">
+          <div className="max-w-4xl mx-auto px-4 py-5">
             <div className="flex items-center justify-between">
               {/* Logo - clickable to go home */}
               <button
                 onClick={handleNewOrder}
-                className="flex items-center space-x-2 hover:opacity-80 transition-opacity"
+                className="flex items-center space-x-3 hover:opacity-80 transition-all duration-200"
               >
-                <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center">
+                <div className="w-12 h-12 bg-gradient-to-br from-[#3B82F6] to-[#1D4ED8] rounded-xl flex items-center justify-center shadow-lg">
                   <svg
-                    className="w-6 h-6 text-white"
+                    className="w-7 h-7 text-white"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -267,60 +284,71 @@ export default function Home() {
                     />
                   </svg>
                 </div>
-                <span className="text-xl font-bold text-gray-800">EXPRO.GE</span>
+                <span className="text-2xl font-bold text-[#F8FAFC]">EXPRO.GE</span>
               </button>
 
               {/* Step Indicator */}
-              {currentStep < 6 && (
+              {currentStep < 7 && (
                 <div className="hidden sm:flex items-center space-x-2">
-                  {[1, 2, 3, 4, 5].map((step) => (
-                    <div key={step} className="flex items-center">
-                      <div
-                        className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-all
-                          ${
-                            step === currentStep
-                              ? 'bg-blue-500 text-white'
-                              : step < currentStep
-                              ? 'bg-green-500 text-white'
-                              : 'bg-gray-200 text-gray-500'
-                          }`}
-                      >
-                        {step < currentStep ? (
-                          <svg
-                            className="w-4 h-4"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M5 13l4 4L19 7"
-                            />
-                          </svg>
-                        ) : (
-                          step
+                  {[1, 2, 3, 4, 5].map((step) => {
+                    // Map current step to display position (step 4 is skipped, so 5->4, 6->5)
+                    const currentActual = currentStep === 2.5 ? 2 : Math.floor(currentStep);
+                    const displayCurrent = currentActual <= 3 ? currentActual : currentActual - 1;
+
+                    return (
+                      <div key={step} className="flex items-center">
+                        <div
+                          className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold transition-all duration-200 shadow-sm
+                            ${
+                              step === displayCurrent
+                                ? 'bg-gradient-to-br from-[#3B82F6] to-[#2563EB] text-white shadow-md'
+                                : step < displayCurrent
+                                ? 'bg-gradient-to-br from-[#10B981] to-[#059669] text-white'
+                                : 'bg-[#334155] text-[#94A3B8]'
+                            }`}
+                        >
+                          {step < displayCurrent ? (
+                            <svg
+                              className="w-4 h-4"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2.5}
+                                d="M5 13l4 4L19 7"
+                              />
+                            </svg>
+                          ) : (
+                            step
+                          )}
+                        </div>
+                        {step < 5 && (
+                          <div
+                            className={`w-6 h-1 mx-0.5 rounded-full transition-all duration-200 ${
+                              step < displayCurrent ? 'bg-[#10B981]' : 'bg-[#475569]'
+                            }`}
+                          />
                         )}
                       </div>
-                      {step < 5 && (
-                        <div
-                          className={`w-8 h-1 mx-1 rounded ${
-                            step < currentStep ? 'bg-green-500' : 'bg-gray-200'
-                          }`}
-                        />
-                      )}
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
 
               {/* Mobile Step Indicator */}
-              {currentStep < 6 && (
+              {currentStep < 7 && (
                 <div className="sm:hidden">
-                  <span className="text-sm text-gray-500">
-                    ნაბიჯი {currentStep}/5 - {stepTitles[currentStep]}
-                  </span>
+                  <div className="flex items-center space-x-2">
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#3B82F6] to-[#2563EB] text-white flex items-center justify-center text-sm font-bold">
+                      {Math.floor(currentStep)}
+                    </div>
+                    <span className="text-sm font-medium text-[#94A3B8]">
+                      {stepTitles[currentStep]}
+                    </span>
+                  </div>
                 </div>
               )}
             </div>
@@ -365,7 +393,7 @@ export default function Home() {
               <div className="flex items-center space-x-4">
                 <button
                   onClick={handleBack}
-                  className="flex items-center space-x-2 text-gray-600 hover:text-gray-800 transition-colors"
+                  className="flex items-center space-x-2 text-[#94A3B8] hover:text-[#F8FAFC] transition-colors"
                 >
                   <svg
                     className="w-5 h-5"
@@ -384,7 +412,7 @@ export default function Home() {
                 </button>
                 <button
                   onClick={handleNewOrder}
-                  className="flex items-center space-x-2 text-blue-600 hover:text-blue-800 transition-colors"
+                  className="flex items-center space-x-2 text-[#60A5FA] hover:text-[#3B82F6] transition-colors"
                 >
                   <svg
                     className="w-5 h-5"
@@ -420,8 +448,8 @@ export default function Home() {
                   className={`px-8 py-3 rounded-xl font-semibold transition-all duration-300 transform
                     ${
                       canProceedFromLocation
-                        ? 'bg-blue-500 hover:bg-blue-600 text-white hover:shadow-lg hover:-translate-y-0.5'
-                        : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                        ? 'bg-gradient-to-r from-[#3B82F6] to-[#2563EB] hover:from-[#2563EB] hover:to-[#1D4ED8] text-white hover:shadow-lg hover:-translate-y-0.5'
+                        : 'bg-[#334155] text-[#64748B] cursor-not-allowed'
                     }`}
                 >
                   გაგრძელება
@@ -430,14 +458,14 @@ export default function Home() {
             </div>
           )}
 
-          {/* Step 4: Date/Time Picker */}
-          {currentStep === 4 && (
+          {/* Step 5: Date/Time Picker */}
+          {currentStep === 5 && (
             <div className="space-y-6 max-w-lg mx-auto">
               {/* Navigation Buttons */}
               <div className="flex items-center space-x-4">
                 <button
                   onClick={handleBack}
-                  className="flex items-center space-x-2 text-gray-600 hover:text-gray-800 transition-colors"
+                  className="flex items-center space-x-2 text-[#94A3B8] hover:text-[#F8FAFC] transition-colors"
                 >
                   <svg
                     className="w-5 h-5"
@@ -456,7 +484,7 @@ export default function Home() {
                 </button>
                 <button
                   onClick={handleNewOrder}
-                  className="flex items-center space-x-2 text-blue-600 hover:text-blue-800 transition-colors"
+                  className="flex items-center space-x-2 text-[#60A5FA] hover:text-[#3B82F6] transition-colors"
                 >
                   <svg
                     className="w-5 h-5"
@@ -486,7 +514,7 @@ export default function Home() {
               <div className="flex justify-center">
                 <button
                   onClick={handleDateTimeComplete}
-                  className="px-8 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-xl font-semibold
+                  className="px-8 py-3 bg-gradient-to-r from-[#3B82F6] to-[#2563EB] hover:from-[#2563EB] hover:to-[#1D4ED8] text-white rounded-xl font-semibold
                            transition-all duration-300 transform hover:shadow-lg hover:-translate-y-0.5"
                 >
                   გაგრძელება
@@ -495,14 +523,14 @@ export default function Home() {
             </div>
           )}
 
-          {/* Step 5: Order Form */}
-          {currentStep === 5 && (
+          {/* Step 6: Order Form */}
+          {currentStep === 6 && (
             <div className="space-y-6 max-w-lg mx-auto">
               {/* Navigation Buttons */}
               <div className="flex items-center space-x-4">
                 <button
                   onClick={handleBack}
-                  className="flex items-center space-x-2 text-gray-600 hover:text-gray-800 transition-colors"
+                  className="flex items-center space-x-2 text-[#94A3B8] hover:text-[#F8FAFC] transition-colors"
                 >
                   <svg
                     className="w-5 h-5"
@@ -521,7 +549,7 @@ export default function Home() {
                 </button>
                 <button
                   onClick={handleNewOrder}
-                  className="flex items-center space-x-2 text-blue-600 hover:text-blue-800 transition-colors"
+                  className="flex items-center space-x-2 text-[#60A5FA] hover:text-[#3B82F6] transition-colors"
                 >
                   <svg
                     className="w-5 h-5"
@@ -541,39 +569,39 @@ export default function Home() {
               </div>
 
               {/* Order Summary */}
-              <div className="bg-white rounded-xl p-4 shadow-md">
-                <h3 className="font-semibold text-gray-800 mb-3">შეკვეთის მონაცემები</h3>
+              <div className="bg-[#1E293B] rounded-xl p-4 shadow-md border border-[#475569]">
+                <h3 className="font-semibold text-[#F8FAFC] mb-3">შეკვეთის მონაცემები</h3>
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
-                    <span className="text-gray-500">სერვისი:</span>
-                    <span className="font-medium">
+                    <span className="text-[#94A3B8]">სერვისი:</span>
+                    <span className="font-medium text-[#F8FAFC]">
                       {serviceType === 'cargo' ? `ტვირთი (${subType})` : 'ევაკუატორი'}
                     </span>
                   </div>
                   {serviceType === 'evacuator' && customerVehicleType && (
                     <div className="flex justify-between">
-                      <span className="text-gray-500">ავტომობილი:</span>
-                      <span className="font-medium">
+                      <span className="text-[#94A3B8]">ავტომობილი:</span>
+                      <span className="font-medium text-[#F8FAFC]">
                         {CUSTOMER_VEHICLE_LABELS[customerVehicleType].title}
                       </span>
                     </div>
                   )}
                   {serviceType === 'evacuator' && serviceVehicleType && (
                     <div className="flex justify-between">
-                      <span className="text-gray-500">ევაკუატორი:</span>
-                      <span className="font-medium">
+                      <span className="text-[#94A3B8]">ევაკუატორი:</span>
+                      <span className="font-medium text-[#F8FAFC]">
                         {SERVICE_VEHICLE_LABELS[serviceVehicleType]}
                       </span>
                     </div>
                   )}
                   <div className="flex justify-between">
-                    <span className="text-gray-500">მანძილი:</span>
-                    <span className="font-medium">{distance} კმ</span>
+                    <span className="text-[#94A3B8]">მანძილი:</span>
+                    <span className="font-medium text-[#F8FAFC]">{distance} კმ</span>
                   </div>
                   {isScheduled && scheduledTime && (
                     <div className="flex justify-between">
-                      <span className="text-gray-500">დრო:</span>
-                      <span className="font-medium">
+                      <span className="text-[#94A3B8]">დრო:</span>
+                      <span className="font-medium text-[#F8FAFC]">
                         {scheduledTime.toLocaleDateString('ka-GE')}
                       </span>
                     </div>
@@ -585,20 +613,22 @@ export default function Home() {
                 phone={phone}
                 onPhoneChange={setPhone}
                 price={price}
+                paymentMethod={paymentMethod}
+                onPaymentMethodChange={handlePaymentMethodChange}
                 onSubmit={handleSubmit}
                 isLoading={isLoading}
               />
             </div>
           )}
 
-          {/* Step 6: Confirmation */}
-          {currentStep === 6 && completedOrder && (
+          {/* Step 7: Confirmation */}
+          {currentStep === 7 && completedOrder && (
             <OrderConfirmation order={completedOrder} onNewOrder={handleNewOrder} />
           )}
         </main>
 
         {/* Footer */}
-        <footer className="mt-auto py-6 text-center text-gray-500 text-sm">
+        <footer className="mt-auto py-6 text-center text-[#94A3B8] text-sm">
           <p>&copy; {new Date().getFullYear()} EXPRO.GE - ყველა უფლება დაცულია</p>
         </footer>
       </div>

@@ -3,20 +3,22 @@
 @tailwind utilities;
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --background: #0F172A;
+  --foreground: #F8FAFC;
+  --card-bg: #1E293B;
+  --border-inactive: #475569;
+  --border-active: #3B82F6;
+  --text-primary: #F8FAFC;
+  --text-secondary: #94A3B8;
+  --text-accent: #60A5FA;
+  --input-bg: #334155;
+  --input-border: #475569;
 }
 
 body {
   color: var(--foreground);
-  background: var(--background);
+  background-color: #0F172A;
+  min-height: 100vh;
   font-family: Arial, Helvetica, sans-serif;
 }
 
@@ -24,4 +26,31 @@ body {
   .text-balance {
     text-wrap: balance;
   }
+}
+
+/* Primary gradient button */
+.btn-primary {
+  @apply font-semibold py-4 px-8 rounded-xl shadow-lg;
+  background: linear-gradient(135deg, #3B82F6 0%, #2563EB 100%);
+  color: white;
+  transition: all 0.2s ease-in-out;
+}
+
+.btn-primary:hover {
+  filter: brightness(1.1);
+  transform: scale(1.02);
+}
+
+/* Secondary button */
+.btn-secondary {
+  @apply font-semibold py-4 px-8 rounded-xl border-2;
+  background-color: #1E293B;
+  border-color: #3B82F6;
+  color: #60A5FA;
+  transition: all 0.2s ease-in-out;
+}
+
+.btn-secondary:hover {
+  background-color: #334155;
+  transform: scale(1.02);
 }

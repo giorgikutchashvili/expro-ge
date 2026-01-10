@@ -1,12 +1,28 @@
 'use client';
 
-import { Order } from '@/lib/types';
+import { useState } from 'react';
+import { Order, PAYMENT_METHOD_LABELS } from '@/lib/types';
 import { formatPrice, formatDate } from '@/lib/utils';
 
 interface OrderConfirmationProps {
   order: Order;
   onNewOrder: () => void;
 }
+
+const BANK_DETAILS = {
+  tbc: {
+    name: 'თიბისი ბანკი',
+    iban: 'GE29TB7692945061453013',
+    receiver: 'EXPRO LLC',
+    color: '#00A3E0',
+  },
+  bog: {
+    name: 'საქართველოს ბანკი',
+    iban: 'GE84BG0000000548795624',
+    receiver: 'EXPRO LLC',
+    color: '#F37021',
+  },
+};
 
 const serviceTypeLabels: Record<string, string> = {
   cargo: 'ტვირთის გადაზიდვა',
@@ -27,6 +43,18 @@ const subTypeLabels: Record<string, string> = {
 };
 
 export default function OrderConfirmation({ order, onNewOrder }: OrderConfirmationProps) {
+  const [copiedBank, setCopiedBank] = useState<'tbc' | 'bog' | null>(null);
+
+  const handleCopyIban = async (bank: 'tbc' | 'bog') => {
+    try {
+      await navigator.clipboard.writeText(BANK_DETAILS[bank].iban);
+      setCopiedBank(bank);
+      setTimeout(() => setCopiedBank(null), 2000);
+    } catch (err) {
+      console.error('Failed to copy:', err);
+    }
+  };
+
   // Format phone for links (remove spaces and ensure proper format)
   const cleanPhone = order.phone.replace(/\s/g, '');
   const whatsappPhone = cleanPhone.startsWith('+') ? cleanPhone.slice(1) : cleanPhone.startsWith('5') ? `995${cleanPhone}` : cleanPhone;
@@ -37,9 +65,9 @@ export default function OrderConfirmation({ order, onNewOrder }: OrderConfirmati
       {/* Success Animation */}
       <div className="flex flex-col items-center mb-8">
         <div className="relative">
-          <div className="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center animate-scaleIn">
+          <div className="w-24 h-24 bg-green-900/30 rounded-full flex items-center justify-center animate-scaleIn">
             <svg
-              className="w-12 h-12 text-green-500 animate-checkmark"
+              className="w-12 h-12 text-green-400 animate-checkmark"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -53,28 +81,28 @@ export default function OrderConfirmation({ order, onNewOrder }: OrderConfirmati
             </svg>
           </div>
           {/* Pulse rings */}
-          <div className="absolute inset-0 w-24 h-24 bg-green-200 rounded-full animate-ping opacity-25" />
+          <div className="absolute inset-0 w-24 h-24 bg-green-500 rounded-full animate-ping opacity-25" />
         </div>
 
-        <h2 className="text-2xl font-bold text-gray-800 mt-6 text-center">
+        <h2 className="text-2xl font-bold text-[#F8FAFC] mt-6 text-center">
           შეკვეთა მიღებულია!
         </h2>
-        <p className="text-gray-500 mt-2 text-center">
+        <p className="text-[#94A3B8] mt-2 text-center">
           მალე დაგიკავშირდებით
         </p>
       </div>
 
       {/* Order Summary */}
-      <div className="bg-white rounded-xl shadow-md overflow-hidden mb-6">
-        <div className="bg-gradient-to-r from-blue-500 to-blue-600 px-6 py-4">
+      <div className="bg-[#1E293B] rounded-xl shadow-md overflow-hidden mb-6 border border-[#475569]">
+        <div className="bg-gradient-to-r from-[#3B82F6] to-[#2563EB] px-6 py-4">
           <h3 className="text-white font-semibold">შეკვეთის დეტალები</h3>
         </div>
 
         <div className="p-6 space-y-4">
           {/* Service Type */}
           <div className="flex items-start space-x-3">
-            <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
-              <svg className="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="w-8 h-8 bg-[#3B82F6]/20 rounded-lg flex items-center justify-center flex-shrink-0">
+              <svg className="w-4 h-4 text-[#60A5FA]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -84,39 +112,39 @@ export default function OrderConfirmation({ order, onNewOrder }: OrderConfirmati
               </svg>
             </div>
             <div>
-              <p className="text-sm text-gray-500">სერვისი</p>
-              <p className="font-medium text-gray-800">
-                {serviceTypeLabels[order.serviceType]} - {subTypeLabels[order.subType]}
+              <p className="text-sm text-[#94A3B8]">სერვისი</p>
+              <p className="font-medium text-[#F8FAFC]">
+                {serviceTypeLabels[order.serviceType]} - {subTypeLabels[order.subType] || order.subType}
               </p>
             </div>
           </div>
 
           {/* Pickup */}
           <div className="flex items-start space-x-3">
-            <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center flex-shrink-0">
+            <div className="w-8 h-8 bg-green-500/20 rounded-lg flex items-center justify-center flex-shrink-0">
               <div className="w-3 h-3 bg-green-500 rounded-full" />
             </div>
             <div>
-              <p className="text-sm text-gray-500">აყვანის ადგილი</p>
-              <p className="font-medium text-gray-800">{order.pickup.address}</p>
+              <p className="text-sm text-[#94A3B8]">აყვანის ადგილი</p>
+              <p className="font-medium text-[#F8FAFC]">{order.pickup.address}</p>
             </div>
           </div>
 
           {/* Dropoff */}
           <div className="flex items-start space-x-3">
-            <div className="w-8 h-8 bg-red-100 rounded-lg flex items-center justify-center flex-shrink-0">
+            <div className="w-8 h-8 bg-red-500/20 rounded-lg flex items-center justify-center flex-shrink-0">
               <div className="w-3 h-3 bg-red-500 rounded-full" />
             </div>
             <div>
-              <p className="text-sm text-gray-500">ჩაბარების ადგილი</p>
-              <p className="font-medium text-gray-800">{order.dropoff.address}</p>
+              <p className="text-sm text-[#94A3B8]">ჩაბარების ადგილი</p>
+              <p className="font-medium text-[#F8FAFC]">{order.dropoff.address}</p>
             </div>
           </div>
 
           {/* Distance */}
           <div className="flex items-start space-x-3">
-            <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center flex-shrink-0">
-              <svg className="w-4 h-4 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="w-8 h-8 bg-purple-500/20 rounded-lg flex items-center justify-center flex-shrink-0">
+              <svg className="w-4 h-4 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -126,15 +154,40 @@ export default function OrderConfirmation({ order, onNewOrder }: OrderConfirmati
               </svg>
             </div>
             <div>
-              <p className="text-sm text-gray-500">მანძილი</p>
-              <p className="font-medium text-gray-800">{order.distance} კმ</p>
+              <p className="text-sm text-[#94A3B8]">მანძილი</p>
+              <p className="font-medium text-[#F8FAFC]">{order.distance} კმ</p>
             </div>
           </div>
 
+          {/* Payment Method */}
+          {order.paymentMethod && (
+            <div className="flex items-start space-x-3">
+              <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                order.paymentMethod === 'cash' ? 'bg-green-500/20' : 'bg-blue-500/20'
+              }`}>
+                {order.paymentMethod === 'cash' ? (
+                  <svg className="w-4 h-4 text-green-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <rect x="2" y="6" width="20" height="12" rx="2" />
+                    <circle cx="12" cy="12" r="3" />
+                  </svg>
+                ) : (
+                  <svg className="w-4 h-4 text-blue-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <rect x="2" y="5" width="20" height="14" rx="2" />
+                    <path d="M2 10h20" />
+                  </svg>
+                )}
+              </div>
+              <div>
+                <p className="text-sm text-[#94A3B8]">გადახდა</p>
+                <p className="font-medium text-[#F8FAFC]">{PAYMENT_METHOD_LABELS[order.paymentMethod]}</p>
+              </div>
+            </div>
+          )}
+
           {/* Price */}
           <div className="flex items-start space-x-3">
-            <div className="w-8 h-8 bg-yellow-100 rounded-lg flex items-center justify-center flex-shrink-0">
-              <svg className="w-4 h-4 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="w-8 h-8 bg-yellow-500/20 rounded-lg flex items-center justify-center flex-shrink-0">
+              <svg className="w-4 h-4 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -144,16 +197,16 @@ export default function OrderConfirmation({ order, onNewOrder }: OrderConfirmati
               </svg>
             </div>
             <div>
-              <p className="text-sm text-gray-500">ფასი</p>
-              <p className="text-xl font-bold text-gray-800">{formatPrice(order.customerPrice)}</p>
+              <p className="text-sm text-[#94A3B8]">ფასი</p>
+              <p className="text-xl font-bold text-[#60A5FA]">{formatPrice(order.customerPrice)}</p>
             </div>
           </div>
 
           {/* Scheduled Time */}
           {order.scheduledTime && (
             <div className="flex items-start space-x-3">
-              <div className="w-8 h-8 bg-indigo-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                <svg className="w-4 h-4 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="w-8 h-8 bg-indigo-500/20 rounded-lg flex items-center justify-center flex-shrink-0">
+                <svg className="w-4 h-4 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -163,12 +216,98 @@ export default function OrderConfirmation({ order, onNewOrder }: OrderConfirmati
                 </svg>
               </div>
               <div>
-                <p className="text-sm text-gray-500">დაგეგმილი დრო</p>
-                <p className="font-medium text-gray-800">{formatDate(order.scheduledTime)}</p>
+                <p className="text-sm text-[#94A3B8]">დაგეგმილი დრო</p>
+                <p className="font-medium text-[#F8FAFC]">{formatDate(order.scheduledTime)}</p>
               </div>
             </div>
           )}
         </div>
+
+        {/* Bank transfer reminder and bank accounts */}
+        {order.paymentMethod === 'card' && (
+          <div className="px-6 pb-6 space-y-4">
+            <div className="p-4 bg-[#0F172A] rounded-lg border border-[#3B82F6]">
+              <p className="text-sm text-[#60A5FA] flex items-center">
+                <svg className="w-4 h-4 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                გთხოვთ გადარიცხოთ თანხა შეკვეთის დასრულებამდე
+              </p>
+            </div>
+
+            {/* TBC Bank Card */}
+            <div
+              className="p-4 bg-[#334155] rounded-lg"
+              style={{ borderLeft: `4px solid ${BANK_DETAILS.tbc.color}` }}
+            >
+              <h4 className="font-semibold text-[#F8FAFC] mb-2">{BANK_DETAILS.tbc.name}</h4>
+              <div className="space-y-1 text-sm">
+                <p className="text-[#94A3B8]">
+                  <span className="text-[#CBD5E1]">IBAN:</span> {BANK_DETAILS.tbc.iban}
+                </p>
+                <p className="text-[#94A3B8]">
+                  <span className="text-[#CBD5E1]">მიმღები:</span> {BANK_DETAILS.tbc.receiver}
+                </p>
+              </div>
+              <button
+                onClick={() => handleCopyIban('tbc')}
+                className="mt-3 px-4 py-2 bg-[#475569] hover:bg-[#64748B] text-[#F8FAFC] text-sm rounded-lg transition-all duration-200 flex items-center space-x-2"
+              >
+                {copiedBank === 'tbc' ? (
+                  <>
+                    <svg className="w-4 h-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    <span>დაკოპირდა!</span>
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                    </svg>
+                    <span>დააკოპირე</span>
+                  </>
+                )}
+              </button>
+            </div>
+
+            {/* BOG Bank Card */}
+            <div
+              className="p-4 bg-[#334155] rounded-lg"
+              style={{ borderLeft: `4px solid ${BANK_DETAILS.bog.color}` }}
+            >
+              <h4 className="font-semibold text-[#F8FAFC] mb-2">{BANK_DETAILS.bog.name}</h4>
+              <div className="space-y-1 text-sm">
+                <p className="text-[#94A3B8]">
+                  <span className="text-[#CBD5E1]">IBAN:</span> {BANK_DETAILS.bog.iban}
+                </p>
+                <p className="text-[#94A3B8]">
+                  <span className="text-[#CBD5E1]">მიმღები:</span> {BANK_DETAILS.bog.receiver}
+                </p>
+              </div>
+              <button
+                onClick={() => handleCopyIban('bog')}
+                className="mt-3 px-4 py-2 bg-[#475569] hover:bg-[#64748B] text-[#F8FAFC] text-sm rounded-lg transition-all duration-200 flex items-center space-x-2"
+              >
+                {copiedBank === 'bog' ? (
+                  <>
+                    <svg className="w-4 h-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    <span>დაკოპირდა!</span>
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                    </svg>
+                    <span>დააკოპირე</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Contact Buttons */}
@@ -210,7 +349,7 @@ export default function OrderConfirmation({ order, onNewOrder }: OrderConfirmati
       {/* New Order Button */}
       <button
         onClick={onNewOrder}
-        className="w-full py-4 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl
+        className="w-full py-4 bg-[#334155] hover:bg-[#475569] text-[#F8FAFC] rounded-xl
                   font-medium transition-all duration-200 flex items-center justify-center space-x-2"
       >
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

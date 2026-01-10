@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { doc, getDoc, updateDoc, collection, getDocs, Timestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { formatPrice } from '@/lib/utils';
-import { ServiceVehicleType, CustomerVehicleType, EvacuatorAnswers, SERVICE_VEHICLE_LABELS, CUSTOMER_VEHICLE_LABELS, CargoSize } from '@/lib/types';
+import { ServiceVehicleType, CustomerVehicleType, EvacuatorAnswers, SERVICE_VEHICLE_LABELS, CUSTOMER_VEHICLE_LABELS, CargoSize, PaymentMethodType, PAYMENT_METHOD_LABELS } from '@/lib/types';
 import { usePricing } from '@/hooks/usePricing';
 import { TBILISI_FIXED_ZONE_KM } from '@/lib/constants';
 import { GoogleMap, Marker, DirectionsRenderer } from '@react-google-maps/api';
@@ -25,6 +25,8 @@ import {
   Clock,
   Star,
   User,
+  Banknote,
+  CreditCard,
 } from 'lucide-react';
 
 interface Order {
@@ -41,6 +43,7 @@ interface Order {
   customerPrice: number;
   driverPrice: number;
   phone: string;
+  paymentMethod?: PaymentMethodType;
   status: string;
   driverId?: string;
   scheduledTime?: Timestamp;
@@ -566,6 +569,25 @@ export default function OrderDetailsPage() {
                     <p className="text-sm text-gray-500">დაგეგმილი დრო</p>
                     <p className="font-medium text-gray-800">
                       {formatDate(order.scheduledTime)}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Payment Method */}
+              {order.paymentMethod && (
+                <div className="flex items-center space-x-3">
+                  <div className={`p-2 rounded-lg ${order.paymentMethod === 'cash' ? 'bg-green-100' : 'bg-blue-100'}`}>
+                    {order.paymentMethod === 'cash' ? (
+                      <Banknote className="w-5 h-5 text-green-600" />
+                    ) : (
+                      <CreditCard className="w-5 h-5 text-blue-600" />
+                    )}
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500">გადახდის მეთოდი</p>
+                    <p className="font-medium text-gray-800">
+                      {PAYMENT_METHOD_LABELS[order.paymentMethod]}
                     </p>
                   </div>
                 </div>

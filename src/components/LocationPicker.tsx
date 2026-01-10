@@ -516,12 +516,12 @@ export default function LocationPicker({
   return (
     <div className="w-full max-w-4xl mx-auto space-y-6">
       {/* Location Inputs */}
-      <div className="bg-white rounded-xl p-6 shadow-md space-y-4">
-        <h3 className="text-lg font-semibold text-gray-800 mb-4">მისამართები</h3>
+      <div className="bg-[#1E293B] rounded-xl p-6 shadow-md space-y-4 border border-[#475569]">
+        <h3 className="text-lg font-semibold text-[#F8FAFC] mb-4">მისამართები</h3>
 
         {/* Pickup Input */}
         <div ref={pickupContainerRef}>
-          <label className="block text-sm font-medium text-gray-600 mb-2">
+          <label className="block text-sm font-medium text-[#94A3B8] mb-2">
             <span className="flex items-center space-x-2">
               <span className="w-3 h-3 bg-green-500 rounded-full"></span>
               <span>აყვანის ადგილი</span>
@@ -538,15 +538,15 @@ export default function LocationPicker({
                 placeholder="ჩაწერეთ მისამართი..."
                 className={`w-full px-4 py-3 pr-10 border rounded-lg focus:ring-2
                          focus:ring-blue-500 focus:border-transparent outline-none transition-all
-                         text-gray-900 placeholder:text-gray-400 bg-white
-                         ${pickupError ? 'border-red-300' : 'border-gray-200'}`}
+                         text-[#F8FAFC] placeholder:text-[#64748B] bg-[#334155]
+                         ${pickupError ? 'border-red-500' : 'border-[#475569]'}`}
               />
               {pickup ? (
                 <button
                   onClick={clearPickup}
                   type="button"
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400
-                           hover:text-gray-600 transition-colors z-10"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[#94A3B8]
+                           hover:text-[#F8FAFC] transition-colors z-10"
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -554,7 +554,7 @@ export default function LocationPicker({
                 </button>
               ) : isLoadingPickupSuggestions && (
                 <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                  <svg className="w-5 h-5 animate-spin text-gray-400" fill="none" viewBox="0 0 24 24">
+                  <svg className="w-5 h-5 animate-spin text-[#94A3B8]" fill="none" viewBox="0 0 24 24">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                   </svg>
@@ -564,7 +564,7 @@ export default function LocationPicker({
               {/* Pickup Suggestions Dropdown */}
               {showPickupSuggestions && pickupSuggestions.length > 0 && (
                 <div
-                  className="absolute left-0 right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-xl max-h-72 overflow-y-auto"
+                  className="absolute left-0 top-full mt-1 bg-[#1E293B] border border-[#475569] rounded-lg shadow-xl max-h-72 overflow-y-auto min-w-full w-max max-w-[90vw] sm:max-w-[500px]"
                   style={{ zIndex: 9999 }}
                 >
                   {pickupSuggestions.map((suggestion, index) => (
@@ -572,17 +572,17 @@ export default function LocationPicker({
                       key={suggestion.placeId}
                       type="button"
                       onClick={() => handleSuggestionSelect(suggestion, 'pickup')}
-                      className={`w-full px-4 py-3 text-left hover:bg-green-50 border-b border-gray-100 last:border-b-0
-                               flex items-start space-x-3 transition-colors ${index === 0 ? 'bg-green-50/50' : ''}`}
+                      className={`w-full px-4 py-3 text-left hover:bg-[#334155] border-b border-[#475569] last:border-b-0
+                               flex items-start space-x-3 transition-colors ${index === 0 ? 'bg-[#334155]/50' : ''}`}
                     >
                       <svg className="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                       </svg>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-gray-900 truncate">{suggestion.mainText}</p>
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-[#F8FAFC]">{suggestion.mainText}</p>
                         {suggestion.secondaryText && (
-                          <p className="text-xs text-gray-500 truncate">{suggestion.secondaryText}</p>
+                          <p className="text-xs text-[#94A3B8] break-words">{suggestion.secondaryText}</p>
                         )}
                       </div>
                     </button>
@@ -620,7 +620,7 @@ export default function LocationPicker({
               className={`px-3 py-3 rounded-lg transition-colors flex items-center
                         ${selectionMode === 'pickup'
                           ? 'bg-green-600 text-white'
-                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+                          : 'bg-[#334155] text-[#94A3B8] hover:bg-[#475569]'}`}
               title="აირჩიეთ რუკაზე"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -644,7 +644,7 @@ export default function LocationPicker({
 
         {/* Dropoff Input */}
         <div ref={dropoffContainerRef}>
-          <label className="block text-sm font-medium text-gray-600 mb-2">
+          <label className="block text-sm font-medium text-[#94A3B8] mb-2">
             <span className="flex items-center space-x-2">
               <span className="w-3 h-3 bg-red-500 rounded-full"></span>
               <span>ჩაბარების ადგილი</span>
@@ -661,15 +661,15 @@ export default function LocationPicker({
                 placeholder="ჩაწერეთ მისამართი..."
                 className={`w-full px-4 py-3 pr-10 border rounded-lg focus:ring-2
                          focus:ring-blue-500 focus:border-transparent outline-none transition-all
-                         text-gray-900 placeholder:text-gray-400 bg-white
-                         ${dropoffError ? 'border-red-300' : 'border-gray-200'}`}
+                         text-[#F8FAFC] placeholder:text-[#64748B] bg-[#334155]
+                         ${dropoffError ? 'border-red-500' : 'border-[#475569]'}`}
               />
               {dropoff ? (
                 <button
                   onClick={clearDropoff}
                   type="button"
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400
-                           hover:text-gray-600 transition-colors z-10"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[#94A3B8]
+                           hover:text-[#F8FAFC] transition-colors z-10"
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -677,7 +677,7 @@ export default function LocationPicker({
                 </button>
               ) : isLoadingDropoffSuggestions && (
                 <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                  <svg className="w-5 h-5 animate-spin text-gray-400" fill="none" viewBox="0 0 24 24">
+                  <svg className="w-5 h-5 animate-spin text-[#94A3B8]" fill="none" viewBox="0 0 24 24">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                   </svg>
@@ -687,7 +687,7 @@ export default function LocationPicker({
               {/* Dropoff Suggestions Dropdown */}
               {showDropoffSuggestions && dropoffSuggestions.length > 0 && (
                 <div
-                  className="absolute left-0 right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-xl max-h-72 overflow-y-auto"
+                  className="absolute left-0 top-full mt-1 bg-[#1E293B] border border-[#475569] rounded-lg shadow-xl max-h-72 overflow-y-auto min-w-full w-max max-w-[90vw] sm:max-w-[500px]"
                   style={{ zIndex: 9999 }}
                 >
                   {dropoffSuggestions.map((suggestion, index) => (
@@ -695,17 +695,17 @@ export default function LocationPicker({
                       key={suggestion.placeId}
                       type="button"
                       onClick={() => handleSuggestionSelect(suggestion, 'dropoff')}
-                      className={`w-full px-4 py-3 text-left hover:bg-red-50 border-b border-gray-100 last:border-b-0
-                               flex items-start space-x-3 transition-colors ${index === 0 ? 'bg-red-50/50' : ''}`}
+                      className={`w-full px-4 py-3 text-left hover:bg-[#334155] border-b border-[#475569] last:border-b-0
+                               flex items-start space-x-3 transition-colors ${index === 0 ? 'bg-[#334155]/50' : ''}`}
                     >
                       <svg className="w-5 h-5 text-red-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                       </svg>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-gray-900 truncate">{suggestion.mainText}</p>
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-[#F8FAFC]">{suggestion.mainText}</p>
                         {suggestion.secondaryText && (
-                          <p className="text-xs text-gray-500 truncate">{suggestion.secondaryText}</p>
+                          <p className="text-xs text-[#94A3B8] break-words">{suggestion.secondaryText}</p>
                         )}
                       </div>
                     </button>
@@ -743,7 +743,7 @@ export default function LocationPicker({
               className={`px-3 py-3 rounded-lg transition-colors flex items-center
                         ${selectionMode === 'dropoff'
                           ? 'bg-red-600 text-white'
-                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+                          : 'bg-[#334155] text-[#94A3B8] hover:bg-[#475569]'}`}
               title="აირჩიეთ რუკაზე"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -767,8 +767,8 @@ export default function LocationPicker({
 
         {/* Distance Display */}
         {distance !== null && (
-          <div className="flex items-center justify-center bg-blue-50 rounded-lg p-4 mt-4">
-            <svg className="w-5 h-5 text-blue-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="flex items-center justify-center bg-[#1E3A5F] rounded-lg p-4 mt-4 border border-[#3B82F6]">
+            <svg className="w-5 h-5 text-[#60A5FA] mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -776,7 +776,7 @@ export default function LocationPicker({
                 d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"
               />
             </svg>
-            <span className="text-blue-700 font-medium">
+            <span className="text-[#60A5FA] font-medium">
               მანძილი: <span className="text-lg font-bold">{distance} კმ</span>
             </span>
           </div>
@@ -786,7 +786,7 @@ export default function LocationPicker({
       {/* Selection Mode Indicator */}
       {selectionMode && (
         <div className={`flex items-center justify-center p-3 rounded-lg ${
-          selectionMode === 'pickup' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+          selectionMode === 'pickup' ? 'bg-green-900/30 text-green-400' : 'bg-red-900/30 text-red-400'
         }`}>
           <svg className="w-5 h-5 mr-2 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122" />
@@ -797,7 +797,7 @@ export default function LocationPicker({
           <button
             onClick={() => setSelectionMode(null)}
             type="button"
-            className="ml-3 text-gray-500 hover:text-gray-700"
+            className="ml-3 text-[#94A3B8] hover:text-[#F8FAFC]"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -808,8 +808,8 @@ export default function LocationPicker({
 
       {/* Google Map */}
       <div
-        className={`bg-white rounded-xl overflow-hidden shadow-md h-80 sm:h-96 ${
-          selectionMode ? 'ring-4 ring-offset-2 ' + (selectionMode === 'pickup' ? 'ring-green-400' : 'ring-red-400') : ''
+        className={`bg-[#1E293B] rounded-xl overflow-hidden shadow-md h-80 sm:h-96 border border-[#475569] ${
+          selectionMode ? 'ring-4 ring-offset-2 ring-offset-[#0F172A] ' + (selectionMode === 'pickup' ? 'ring-green-400' : 'ring-red-400') : ''
         }`}
       >
         <GoogleMap

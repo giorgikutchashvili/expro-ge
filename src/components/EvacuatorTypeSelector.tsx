@@ -118,10 +118,10 @@ export default function EvacuatorTypeSelector({
     <div className="space-y-6">
       {/* Header */}
       <div className="text-center">
-        <h2 className="text-xl font-bold text-gray-800 mb-2">
+        <h2 className="text-2xl font-bold text-[#F8FAFC] mb-2">
           რა ტიპის მანქანას ევაკუირებთ?
         </h2>
-        <p className="text-gray-500 text-sm">
+        <p className="text-[#94A3B8] text-sm">
           აირჩიეთ თქვენი სატრანსპორტო საშუალების ტიპი
         </p>
       </div>
@@ -138,38 +138,34 @@ export default function EvacuatorTypeSelector({
               key={type}
               onClick={() => onSelect(type)}
               className={`
-                relative p-4 rounded-xl border-2 transition-all duration-200
+                relative p-6 rounded-2xl border transition-all duration-200 ease-in-out
                 flex flex-col items-center text-center
+                shadow-md hover:shadow-lg hover:scale-[1.02]
                 ${isSelected
-                  ? 'border-orange-500 bg-orange-50 shadow-md'
-                  : 'border-gray-200 bg-white hover:border-gray-300 hover:shadow-sm'
+                  ? 'border-2 border-[#3B82F6] bg-[#1E3A5F]'
+                  : 'border border-[#475569] bg-[#1E293B] hover:border-[#60A5FA]'
                 }
               `}
             >
               {/* Selection indicator */}
               {isSelected && (
-                <div className="absolute top-2 right-2 w-5 h-5 bg-orange-500 rounded-full flex items-center justify-center">
-                  <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="absolute top-3 right-3 w-6 h-6 bg-[#3B82F6] rounded-full flex items-center justify-center">
+                  <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                   </svg>
                 </div>
               )}
 
               {/* Icon */}
-              <div className={`
-                w-14 h-14 rounded-xl flex items-center justify-center mb-3
-                ${isSelected ? 'bg-orange-100' : 'bg-gray-100'}
-              `}>
-                <Icon className={`w-8 h-8 ${isSelected ? 'text-orange-600' : 'text-gray-600'}`} />
-              </div>
+              <Icon className="w-12 h-12 text-[#60A5FA] mb-3" />
 
-              {/* Title */}
-              <h3 className={`font-semibold text-sm mb-1 ${isSelected ? 'text-orange-700' : 'text-gray-800'}`}>
+              {/* Title - Large and Bold */}
+              <h3 className="text-3xl font-bold mb-2 text-[#60A5FA]">
                 {label.title}
               </h3>
 
               {/* Description */}
-              <p className="text-xs text-gray-500 leading-tight">
+              <p className="text-sm text-[#94A3B8]">
                 {label.description}
               </p>
             </button>
@@ -180,7 +176,7 @@ export default function EvacuatorTypeSelector({
       {/* Back Button */}
       <button
         onClick={onBack}
-        className="flex items-center space-x-2 text-gray-600 hover:text-gray-800 transition-colors mx-auto"
+        className="flex items-center space-x-2 text-[#94A3B8] hover:text-[#F8FAFC] transition-all duration-200 mx-auto"
       >
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />

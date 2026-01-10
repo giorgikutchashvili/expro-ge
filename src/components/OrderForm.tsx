@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { formatPrice } from '@/lib/utils';
+import { PaymentMethodType } from '@/lib/types';
 
 interface OrderFormProps {
   phone: string;
@@ -10,6 +11,8 @@ interface OrderFormProps {
     customerPrice: number;
     driverPrice: number;
   };
+  paymentMethod: PaymentMethodType;
+  onPaymentMethodChange: (method: PaymentMethodType) => void;
   onSubmit: () => void;
   isLoading: boolean;
 }
@@ -18,6 +21,8 @@ export default function OrderForm({
   phone,
   onPhoneChange,
   price,
+  paymentMethod,
+  onPaymentMethodChange,
   onSubmit,
   isLoading,
 }: OrderFormProps) {
@@ -107,6 +112,45 @@ export default function OrderForm({
             <span>{phoneError}</span>
           </p>
         )}
+      </div>
+
+      {/* Payment Method Toggle */}
+      <div>
+        <label className="block text-sm font-medium text-gray-600 mb-2">
+          გადახდის მეთოდი
+        </label>
+        <div className="flex space-x-3">
+          <button
+            type="button"
+            onClick={() => onPaymentMethodChange('cash')}
+            className={`flex-1 flex items-center justify-center space-x-2 py-3 px-4 rounded-lg font-medium transition-all duration-200 ${
+              paymentMethod === 'cash'
+                ? 'bg-blue-600 text-white'
+                : 'bg-slate-700 text-slate-400 hover:bg-slate-600'
+            }`}
+          >
+            <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <rect x="2" y="6" width="20" height="12" rx="2" />
+              <circle cx="12" cy="12" r="3" />
+            </svg>
+            <span>ნაღდი ფული</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => onPaymentMethodChange('card')}
+            className={`flex-1 flex items-center justify-center space-x-2 py-3 px-4 rounded-lg font-medium transition-all duration-200 ${
+              paymentMethod === 'card'
+                ? 'bg-blue-600 text-white'
+                : 'bg-slate-700 text-slate-400 hover:bg-slate-600'
+            }`}
+          >
+            <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <rect x="2" y="5" width="20" height="14" rx="2" />
+              <path d="M2 10h20" />
+            </svg>
+            <span>ბარათით</span>
+          </button>
+        </div>
       </div>
 
       {/* Price Display */}

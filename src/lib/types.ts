@@ -26,6 +26,14 @@ export interface Location {
 
 export type OrderStatus = 'pending' | 'accepted' | 'in_progress' | 'completed' | 'cancelled';
 
+// Payment method types
+export type PaymentMethodType = 'cash' | 'card';
+
+export const PAYMENT_METHOD_LABELS: Record<PaymentMethodType, string> = {
+  cash: 'ნაღდი ფული',
+  card: 'ბარათით',
+};
+
 export interface Order {
   id: string;
   serviceType: ServiceType;
@@ -36,6 +44,7 @@ export interface Order {
   customerPrice: number;
   driverPrice: number;
   phone: string;
+  paymentMethod?: PaymentMethodType;
   status: OrderStatus;
   scheduledTime?: Date;
   createdAt: Date;
@@ -82,10 +91,10 @@ export const SERVICE_VEHICLE_LABELS: Record<ServiceVehicleType, string> = {
 
 // Cargo size labels
 export const CARGO_SIZE_LABELS: Record<CargoSize, { title: string; dimensions: string; weight: string }> = {
-  S: { title: 'S - პატარა', dimensions: '1.5მ × 1.2მ × 1მ', weight: '500 კგ-მდე' },
-  M: { title: 'M - საშუალო', dimensions: '2.5მ × 1.5მ × 1.5მ', weight: '1000 კგ-მდე' },
-  L: { title: 'L - დიდი', dimensions: '3მ × 1.8მ × 1.8მ', weight: '1500 კგ-მდე' },
-  XL: { title: 'XL - ძალიან დიდი', dimensions: '4მ × 2მ × 2მ', weight: '3000 კგ-მდე' },
+  S: { title: 'S', dimensions: '1.5მ × 1.2მ × 1მ', weight: '500 კგ-მდე' },
+  M: { title: 'M', dimensions: '2.5მ × 1.5მ × 1.5მ', weight: '1000 კგ-მდე' },
+  L: { title: 'L', dimensions: '3მ × 1.8მ × 1.8მ', weight: '1500 კგ-მდე' },
+  XL: { title: 'XL', dimensions: '4მ × 2მ × 2მ', weight: '3000 კგ-მდე' },
   CONSTRUCTION: { title: 'სამშენებლო', dimensions: '5მ × 2.2მ × 2.2მ', weight: '5000 კგ-მდე' },
 };
 
