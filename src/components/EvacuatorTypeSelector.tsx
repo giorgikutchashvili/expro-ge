@@ -115,10 +115,10 @@ export default function EvacuatorTypeSelector({
   onBack,
 }: EvacuatorTypeSelectorProps) {
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6 max-w-[480px] mx-auto">
       {/* Header */}
       <div className="text-center">
-        <h2 className="text-2xl font-bold text-[#F8FAFC] mb-2">
+        <h2 className="text-xl sm:text-2xl font-bold text-[#F8FAFC] mb-2">
           რა ტიპის მანქანას ევაკუირებთ?
         </h2>
         <p className="text-[#94A3B8] text-sm">
@@ -126,8 +126,8 @@ export default function EvacuatorTypeSelector({
         </p>
       </div>
 
-      {/* Vehicle Type Grid */}
-      <div className="grid grid-cols-2 gap-4">
+      {/* Vehicle Type Cards - Horizontal Layout */}
+      <div className="flex flex-col gap-3">
         {vehicleOrder.map((type) => {
           const Icon = vehicleIcons[type];
           const label = CUSTOMER_VEHICLE_LABELS[type];
@@ -137,37 +137,42 @@ export default function EvacuatorTypeSelector({
             <button
               key={type}
               onClick={() => onSelect(type)}
-              className={`
-                relative p-6 rounded-2xl border transition-all duration-200 ease-in-out
-                flex flex-col items-center text-center
-                shadow-md hover:shadow-lg hover:scale-[1.02]
-                ${isSelected
-                  ? 'border-2 border-[#3B82F6] bg-[#1E3A5F]'
-                  : 'border border-[#475569] bg-[#1E293B] hover:border-[#60A5FA]'
-                }
-              `}
+              className={`relative h-[90px] sm:h-[100px] w-full rounded-2xl shadow-lg overflow-hidden
+                         bg-gradient-to-r from-[#F97316] to-[#EA580C]
+                         transition-all duration-200 ease-in-out
+                         hover:scale-[1.02] hover:shadow-xl
+                         flex items-center px-4 sm:px-6
+                         ${isSelected ? 'ring-4 ring-white/50' : ''}`}
             >
-              {/* Selection indicator */}
-              {isSelected && (
-                <div className="absolute top-3 right-3 w-6 h-6 bg-[#3B82F6] rounded-full flex items-center justify-center">
-                  <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                  </svg>
-                </div>
-              )}
-
               {/* Icon */}
-              <Icon className="w-12 h-12 text-[#60A5FA] mb-3" />
+              <div className="w-12 h-12 sm:w-14 sm:h-14 flex items-center justify-center shrink-0">
+                <Icon className="w-12 h-12 sm:w-14 sm:h-14 text-white" />
+              </div>
 
-              {/* Title - Large and Bold */}
-              <h3 className="text-3xl font-bold mb-2 text-[#60A5FA]">
-                {label.title}
-              </h3>
+              {/* Text */}
+              <div className="text-left ml-3 sm:ml-4 flex-1 min-w-0">
+                <h3 className="font-bold text-xl sm:text-2xl text-white mb-0.5">
+                  {label.title}
+                </h3>
+                <p className="text-xs sm:text-sm text-white/80 truncate">
+                  {label.description}
+                </p>
+              </div>
 
-              {/* Description */}
-              <p className="text-sm text-[#94A3B8]">
-                {label.description}
-              </p>
+              {/* Arrow or Check */}
+              <div className="ml-auto shrink-0">
+                {isSelected ? (
+                  <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
+                    <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                    </svg>
+                  </div>
+                ) : (
+                  <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
+                  </svg>
+                )}
+              </div>
             </button>
           );
         })}

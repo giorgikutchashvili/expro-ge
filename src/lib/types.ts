@@ -71,12 +71,12 @@ export interface Driver {
 
 // Customer vehicle type labels
 export const CUSTOMER_VEHICLE_LABELS: Record<CustomerVehicleType, { title: string; description: string }> = {
-  SEDAN: { title: 'მსუბუქი ავტომობილი', description: 'სედანი, ჰეჩბეკი, კუპე' },
-  SUV: { title: 'ჯიპი / SUV', description: 'მაღალი გამავლობის, პიკაპი' },
-  MINIBUS: { title: 'მიკროავტობუსი', description: 'სატვირთო ვენი (Sprinter, Transit)' },
-  CONSTRUCTION: { title: 'სამშენებლო / სპეცტექნიკა', description: 'Bobcat, Forklift' },
-  MOTO: { title: 'მოტო / სკუტერი', description: 'მოტოციკლი, კვადროციკლი' },
-  SPORTS: { title: 'SPORTS CAR', description: 'სპორტული, დაწეული სავალი ნაწილი' },
+  SEDAN: { title: 'მსუბუქი', description: 'სედანი, ჰეჩბეკი, კუპე' },
+  SUV: { title: 'ჯიპი', description: 'მაღალი გამავლობის, პიკაპი' },
+  MINIBUS: { title: 'მიკროავტობუსი', description: 'Sprinter, Transit' },
+  CONSTRUCTION: { title: 'სპეცტექნიკა', description: 'Bobcat, Forklift' },
+  MOTO: { title: 'მოტოციკლი', description: 'სკუტერი, კვადროციკლი' },
+  SPORTS: { title: 'სპორტული', description: 'დაწეული სავალი ნაწილი' },
 };
 
 // Service vehicle type labels

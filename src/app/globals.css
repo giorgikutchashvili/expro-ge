@@ -1,3 +1,6 @@
+/* Import Google Fonts for Georgian */
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Georgian:wght@400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -19,7 +22,7 @@ body {
   color: var(--foreground);
   background-color: #0F172A;
   min-height: 100vh;
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: "Noto Sans Georgian", "Segoe UI", system-ui, -apple-system, sans-serif;
 }
 
 @layer utilities {
