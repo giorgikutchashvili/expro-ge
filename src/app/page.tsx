@@ -3,18 +3,22 @@
 import { useState, useCallback } from 'react';
 import { collection, addDoc, Timestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { ServiceType, CargoSize, EvacuatorType, Location, Order, CustomerVehicleType, ServiceVehicleType, EvacuatorAnswers, SERVICE_VEHICLE_LABELS, CUSTOMER_VEHICLE_LABELS, PaymentMethodType } from '@/lib/types';
+import { ServiceType, CargoSize, EvacuatorType, Location, Order, CustomerVehicleType, ServiceVehicleType, EvacuatorAnswers, SERVICE_VEHICLE_LABELS, CUSTOMER_VEHICLE_LABELS, PaymentMethodType, CraneFloor, CraneCargoType, CraneDuration, CRANE_FLOOR_LABELS, CRANE_CARGO_LABELS, CRANE_DURATION_LABELS } from '@/lib/types';
 import { usePricing } from '@/hooks/usePricing';
 
 import GoogleMapsProvider from '@/components/GoogleMapsProvider';
 import ServiceSelector from '@/components/ServiceSelector';
 import SubTypeSelector from '@/components/SubTypeSelector';
 import LocationPicker from '@/components/LocationPicker';
+import SingleLocationPicker from '@/components/SingleLocationPicker';
 import DateTimePicker from '@/components/DateTimePicker';
 import OrderForm from '@/components/OrderForm';
 import OrderConfirmation from '@/components/OrderConfirmation';
 import EvacuatorTypeSelector from '@/components/EvacuatorTypeSelector';
 import EvacuatorQuestionnaire, { needsQuestionnaire, getDirectServiceType } from '@/components/EvacuatorQuestionnaire';
+import CraneLiftSelector from '@/components/CraneLiftSelector';
+import CookieBanner from '@/components/CookieBanner';
+import Link from 'next/link';
 
 type Step = 1 | 2 | 2.5 | 3 | 5 | 6 | 7;
 
@@ -47,6 +51,11 @@ export default function Home() {
   const [serviceVehicleType, setServiceVehicleType] = useState<ServiceVehicleType | null>(null);
   const [evacuatorAnswers, setEvacuatorAnswers] = useState<EvacuatorAnswers>({});
 
+  // Crane lift state
+  const [craneFloor, setCraneFloor] = useState<CraneFloor | null>(null);
+  const [craneCargoType, setCraneCargoType] = useState<CraneCargoType | null>(null);
+  const [craneDuration, setCraneDuration] = useState<CraneDuration | null>(null);
+
   // Payment method state - default to 'cash'
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethodType>('cash');
 
@@ -55,10 +64,12 @@ export default function Home() {
   const [completedOrder, setCompletedOrder] = useState<Order | null>(null);
 
   // Get pricing from Firestore
-  const { calculatePrice, calculateServiceVehiclePrice } = usePricing();
+  const { calculatePrice, calculateServiceVehiclePrice, calculateCranePrice } = usePricing();
 
-  // Calculate price - use new service vehicle pricing for evacuator
-  const price = serviceType === 'evacuator' && serviceVehicleType && distance
+  // Calculate price - use new service vehicle pricing for evacuator, crane pricing for crane
+  const price = serviceType === 'crane' && craneDuration && craneFloor
+    ? calculateCranePrice(craneDuration, craneFloor)
+    : serviceType === 'evacuator' && serviceVehicleType && distance
     ? calculateServiceVehiclePrice(serviceVehicleType, distance)
     : serviceType && subType && distance
       ? calculatePrice(serviceType, subType, distance)
@@ -96,8 +107,21 @@ export default function Home() {
     setCurrentStep(3);
   };
 
+  // Crane lift handler
+  const handleCraneComplete = (floor: CraneFloor, cargoType: CraneCargoType, duration: CraneDuration) => {
+    setCraneFloor(floor);
+    setCraneCargoType(cargoType);
+    setCraneDuration(duration);
+    setCurrentStep(3);
+  };
+
   const handleLocationComplete = () => {
-    if (pickup && dropoff && distance) {
+    if (serviceType === 'crane') {
+      // For crane, only need single address (pickup)
+      if (pickup) {
+        setCurrentStep(5);
+      }
+    } else if (pickup && dropoff && distance) {
       setCurrentStep(5); // Skip payment step (now in OrderForm), go to date/time
     }
   };
@@ -121,6 +145,9 @@ export default function Home() {
       } else {
         setCurrentStep(2);
       }
+    } else if (currentStep === 3 && serviceType === 'crane') {
+      // From location picker in crane flow, go back to crane selector
+      setCurrentStep(2);
     } else if (currentStep === 5) {
       // From date/time, go back to location
       setCurrentStep(3);
@@ -135,9 +162,14 @@ export default function Home() {
   const handleSubmit = async () => {
     // For evacuator, we need serviceVehicleType instead of subType
     const isEvacuator = serviceType === 'evacuator';
-    if (!serviceType || (!isEvacuator && !subType) || (isEvacuator && !serviceVehicleType) || !pickup || !dropoff || !distance || !phone) {
-      return;
-    }
+    const isCrane = serviceType === 'crane';
+
+    // Validation
+    if (!serviceType || !pickup || !phone) return;
+    if (!isCrane && (!dropoff || !distance)) return;
+    if (!isEvacuator && !isCrane && !subType) return;
+    if (isEvacuator && !serviceVehicleType) return;
+    if (isCrane && (!craneFloor || !craneCargoType || !craneDuration)) return;
 
     setIsLoading(true);
 
@@ -145,15 +177,20 @@ export default function Home() {
       // Create order object
       const orderData = {
         serviceType,
-        subType: isEvacuator ? serviceVehicleType : subType,
+        subType: isCrane ? craneDuration : isEvacuator ? serviceVehicleType : subType,
         ...(isEvacuator && {
           customerVehicleType,
           serviceVehicleType,
           evacuatorAnswers,
         }),
+        ...(isCrane && {
+          craneFloor,
+          craneCargoType,
+          craneDuration,
+        }),
         pickup,
-        dropoff,
-        distance,
+        ...(dropoff && { dropoff }),
+        ...(distance && { distance }),
         customerPrice: price.customerPrice,
         driverPrice: price.driverPrice,
         phone,
@@ -170,24 +207,37 @@ export default function Home() {
       // Send Telegram notification
       console.log('Sending Telegram notification...');
       try {
+        const telegramBody: Record<string, unknown> = {
+          serviceType,
+          subType: isCrane ? craneDuration : isEvacuator ? serviceVehicleType : subType,
+          pickupAddress: pickup.address,
+          pickupLat: pickup.lat,
+          pickupLng: pickup.lng,
+          customerPrice: price.customerPrice,
+          phone,
+        };
+
+        // Add dropoff for non-crane services
+        if (!isCrane && dropoff) {
+          telegramBody.dropoffAddress = dropoff.address;
+          telegramBody.dropoffLat = dropoff.lat;
+          telegramBody.dropoffLng = dropoff.lng;
+          telegramBody.distance = distance;
+        }
+
+        // Add crane-specific fields
+        if (isCrane) {
+          telegramBody.craneFloor = craneFloor;
+          telegramBody.craneCargoType = craneCargoType;
+          telegramBody.craneDuration = craneDuration;
+        }
+
         const telegramResponse = await fetch('/api/telegram', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({
-            serviceType,
-            subType,
-            pickupAddress: pickup.address,
-            pickupLat: pickup.lat,
-            pickupLng: pickup.lng,
-            dropoffAddress: dropoff.address,
-            dropoffLat: dropoff.lat,
-            dropoffLng: dropoff.lng,
-            customerPrice: price.customerPrice,
-            phone,
-            distance,
-          }),
+          body: JSON.stringify(telegramBody),
         });
 
         const telegramData = await telegramResponse.json();
@@ -206,15 +256,20 @@ export default function Home() {
       const order: Order = {
         id: docRef.id,
         serviceType,
-        subType: isEvacuator ? serviceVehicleType! : subType!,
+        subType: isCrane ? craneDuration! : isEvacuator ? serviceVehicleType! : subType!,
         ...(isEvacuator && {
           customerVehicleType: customerVehicleType!,
           serviceVehicleType: serviceVehicleType!,
           evacuatorAnswers,
         }),
+        ...(isCrane && {
+          craneFloor: craneFloor!,
+          craneCargoType: craneCargoType!,
+          craneDuration: craneDuration!,
+        }),
         pickup,
-        dropoff,
-        distance,
+        dropoff: dropoff || undefined,
+        distance: distance || undefined,
         customerPrice: price.customerPrice,
         driverPrice: price.driverPrice,
         phone,
@@ -250,12 +305,18 @@ export default function Home() {
     setCustomerVehicleType(null);
     setServiceVehicleType(null);
     setEvacuatorAnswers({});
+    // Reset crane state
+    setCraneFloor(null);
+    setCraneCargoType(null);
+    setCraneDuration(null);
     // Reset payment method to default
     setPaymentMethod('cash');
   };
 
   // Check if can proceed from location step
-  const canProceedFromLocation = pickup && dropoff && distance;
+  const canProceedFromLocation = serviceType === 'crane'
+    ? pickup
+    : pickup && dropoff && distance;
 
   return (
     <GoogleMapsProvider>
@@ -386,6 +447,14 @@ export default function Home() {
             />
           )}
 
+          {/* Step 2: Crane Lift Selector */}
+          {currentStep === 2 && serviceType === 'crane' && (
+            <CraneLiftSelector
+              onComplete={handleCraneComplete}
+              onBack={handleBack}
+            />
+          )}
+
           {/* Step 3: Location Picker */}
           {currentStep === 3 && (
             <div className="space-y-6">
@@ -431,14 +500,22 @@ export default function Home() {
                 </button>
               </div>
 
-              <LocationPicker
-                pickup={pickup}
-                dropoff={dropoff}
-                onPickupChange={setPickup}
-                onDropoffChange={setDropoff}
-                distance={distance}
-                onDistanceChange={setDistance}
-              />
+              {serviceType === 'crane' ? (
+                <SingleLocationPicker
+                  location={pickup}
+                  onLocationChange={setPickup}
+                  label="მისამართი"
+                />
+              ) : (
+                <LocationPicker
+                  pickup={pickup}
+                  dropoff={dropoff}
+                  onPickupChange={setPickup}
+                  onDropoffChange={setDropoff}
+                  distance={distance}
+                  onDistanceChange={setDistance}
+                />
+              )}
 
               {/* Continue Button */}
               <div className="flex justify-center">
@@ -575,7 +652,7 @@ export default function Home() {
                   <div className="flex justify-between">
                     <span className="text-[#94A3B8]">სერვისი:</span>
                     <span className="font-medium text-[#F8FAFC]">
-                      {serviceType === 'cargo' ? `ტვირთი (${subType})` : 'ევაკუატორი'}
+                      {serviceType === 'cargo' ? `ტვირთი (${subType})` : serviceType === 'crane' ? 'ამწე ლიფტი' : 'ევაკუატორი'}
                     </span>
                   </div>
                   {serviceType === 'evacuator' && customerVehicleType && (
@@ -594,10 +671,36 @@ export default function Home() {
                       </span>
                     </div>
                   )}
-                  <div className="flex justify-between">
-                    <span className="text-[#94A3B8]">მანძილი:</span>
-                    <span className="font-medium text-[#F8FAFC]">{distance} კმ</span>
-                  </div>
+                  {serviceType === 'crane' && craneFloor && (
+                    <div className="flex justify-between">
+                      <span className="text-[#94A3B8]">სართული:</span>
+                      <span className="font-medium text-[#F8FAFC]">
+                        {CRANE_FLOOR_LABELS[craneFloor].title}
+                      </span>
+                    </div>
+                  )}
+                  {serviceType === 'crane' && craneCargoType && (
+                    <div className="flex justify-between">
+                      <span className="text-[#94A3B8]">ტვირთის ტიპი:</span>
+                      <span className="font-medium text-[#F8FAFC]">
+                        {CRANE_CARGO_LABELS[craneCargoType]}
+                      </span>
+                    </div>
+                  )}
+                  {serviceType === 'crane' && craneDuration && (
+                    <div className="flex justify-between">
+                      <span className="text-[#94A3B8]">ხანგრძლივობა:</span>
+                      <span className="font-medium text-[#F8FAFC]">
+                        {CRANE_DURATION_LABELS[craneDuration]}
+                      </span>
+                    </div>
+                  )}
+                  {distance && (
+                    <div className="flex justify-between">
+                      <span className="text-[#94A3B8]">მანძილი:</span>
+                      <span className="font-medium text-[#F8FAFC]">{distance} კმ</span>
+                    </div>
+                  )}
                   {isScheduled && scheduledTime && (
                     <div className="flex justify-between">
                       <span className="text-[#94A3B8]">დრო:</span>
@@ -628,9 +731,20 @@ export default function Home() {
         </main>
 
         {/* Footer */}
-        <footer className="mt-auto py-6 text-center text-[#94A3B8] text-sm">
-          <p>&copy; {new Date().getFullYear()} EXPRO.GE - ყველა უფლება დაცულია</p>
+        <footer className="mt-auto py-4 text-center">
+          <p className="text-xs text-slate-500">
+            &copy; {new Date().getFullYear()} EXPRO.GE{' '}
+            <span className="mx-1">·</span>
+            <Link href="/privacy" className="hover:text-slate-400 transition-colors">კონფიდენციალურობა</Link>
+            <span className="mx-1">·</span>
+            <Link href="/terms" className="hover:text-slate-400 transition-colors">პირობები</Link>
+            <span className="mx-1">·</span>
+            <Link href="/contact" className="hover:text-slate-400 transition-colors">კონტაქტი</Link>
+          </p>
         </footer>
+
+        {/* Cookie Banner */}
+        <CookieBanner />
       </div>
     </GoogleMapsProvider>
   );

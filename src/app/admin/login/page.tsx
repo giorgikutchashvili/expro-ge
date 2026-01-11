@@ -30,7 +30,7 @@ export default function AdminLoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-[#0F172A] flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="text-center mb-8">
@@ -38,34 +38,34 @@ export default function AdminLoginPage() {
             <span className="text-white font-bold text-2xl">E</span>
           </div>
           <h1 className="text-2xl font-bold text-white">EXPRO.GE</h1>
-          <p className="text-gray-400 mt-2">ადმინ პანელი</p>
+          <p className="text-slate-400 mt-2">ადმინ პანელი</p>
         </div>
 
         {/* Login Form */}
         <form
           onSubmit={handleSubmit}
-          className="bg-white rounded-2xl shadow-xl p-8 space-y-6"
+          className="bg-[#1E293B] rounded-2xl shadow-xl p-8 space-y-6"
         >
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-slate-400 mb-2">
               პაროლი
             </label>
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <Lock className="h-5 w-5 text-gray-400" />
+                <Lock className="h-5 w-5 text-slate-400" />
               </div>
               <input
                 type={showPassword ? 'text' : 'password'}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="შეიყვანეთ პაროლი"
-                className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all text-gray-900 placeholder:text-gray-400 bg-white"
+                className="w-full pl-10 pr-12 py-3 border border-[#475569] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all text-white placeholder:text-slate-400 bg-[#334155]"
                 required
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
+                className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-white"
               >
                 {showPassword ? (
                   <EyeOff className="h-5 w-5" />
@@ -77,7 +77,7 @@ export default function AdminLoginPage() {
           </div>
 
           {error && (
-            <div className="bg-red-50 text-red-600 px-4 py-3 rounded-lg text-sm flex items-center">
+            <div className="bg-red-500/20 text-red-400 px-4 py-3 rounded-lg text-sm flex items-center">
               <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path
                   strokeLinecap="round"
@@ -107,7 +107,7 @@ export default function AdminLoginPage() {
         <div className="text-center mt-6">
           <a
             href="/"
-            className="text-gray-400 hover:text-white text-sm transition-colors"
+            className="text-slate-400 hover:text-white text-sm transition-colors"
           >
             ← მთავარ გვერდზე დაბრუნება
           </a>

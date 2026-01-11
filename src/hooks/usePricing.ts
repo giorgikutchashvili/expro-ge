@@ -3,8 +3,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { doc, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { ServiceType, CargoSize, EvacuatorType, ServiceVehicleType } from '@/lib/types';
-import { CARGO_PRICES, EVACUATOR_PRICES, SERVICE_VEHICLE_PRICES, TBILISI_FIXED_ZONE_KM } from '@/lib/constants';
+import { ServiceType, CargoSize, EvacuatorType, ServiceVehicleType, CraneDuration, CraneFloor, CRANE_FLOOR_LABELS } from '@/lib/types';
+import { CARGO_PRICES, EVACUATOR_PRICES, SERVICE_VEHICLE_PRICES, TBILISI_FIXED_ZONE_KM, CRANE_PRICES } from '@/lib/constants';
 
 interface PriceConfig {
   customerPrice: number;
@@ -13,11 +13,17 @@ interface PriceConfig {
   perKmProfit: number;
 }
 
+interface CranePriceConfig {
+  customerPrice: number;
+  driverPrice: number;
+}
+
 interface PricingSettings {
   tbilisiFixedZoneKm: number;
   cargo: Record<string, PriceConfig>;
   evacuator: Record<string, PriceConfig>;
   serviceVehicle: Record<string, PriceConfig>;
+  crane: Record<string, CranePriceConfig>;
 }
 
 interface PriceResult {
@@ -41,6 +47,7 @@ function getDefaultSettings(): PricingSettings {
   const cargoDefaults: Record<string, PriceConfig> = {};
   const evacuatorDefaults: Record<string, PriceConfig> = {};
   const serviceVehicleDefaults: Record<string, PriceConfig> = {};
+  const craneDefaults: Record<string, CranePriceConfig> = {};
 
   Object.entries(CARGO_PRICES).forEach(([key, value]) => {
     cargoDefaults[key] = {
@@ -69,11 +76,19 @@ function getDefaultSettings(): PricingSettings {
     };
   });
 
+  Object.entries(CRANE_PRICES).forEach(([key, value]) => {
+    craneDefaults[key] = {
+      customerPrice: value.customerPrice,
+      driverPrice: value.driverPrice,
+    };
+  });
+
   return {
     tbilisiFixedZoneKm: TBILISI_FIXED_ZONE_KM,
     cargo: cargoDefaults,
     evacuator: evacuatorDefaults,
     serviceVehicle: serviceVehicleDefaults,
+    crane: craneDefaults,
   };
 }
 
@@ -93,6 +108,7 @@ export function usePricing() {
             cargo: { ...defaults.cargo, ...data.cargo },
             evacuator: { ...defaults.evacuator, ...data.evacuator },
             serviceVehicle: { ...defaults.serviceVehicle, ...data.serviceVehicle },
+            crane: { ...defaults.crane, ...data.crane },
           });
         }
         setIsLoading(false);
@@ -246,11 +262,37 @@ export function usePricing() {
     [settings]
   );
 
+  // Calculate crane price with floor surcharge
+  const calculateCranePrice = useCallback(
+    (duration: CraneDuration, floor: CraneFloor): PriceResult => {
+      const priceInfo = settings.crane[duration];
+
+      if (!priceInfo) {
+        return { customerPrice: 0, driverPrice: 0, profit: 0 };
+      }
+
+      // Get floor surcharge
+      const floorSurcharge = CRANE_FLOOR_LABELS[floor]?.surcharge || 0;
+
+      const customerPrice = priceInfo.customerPrice + floorSurcharge;
+      const driverPrice = priceInfo.driverPrice + Math.round(floorSurcharge * 0.7); // Driver gets 70% of surcharge
+      const profit = customerPrice - driverPrice;
+
+      return {
+        customerPrice,
+        driverPrice,
+        profit,
+      };
+    },
+    [settings]
+  );
+
   return {
     settings,
     isLoading,
     calculatePrice,
     calculateServiceVehiclePrice,
     calculateDetailedPrice,
+    calculateCranePrice,
   };
 }

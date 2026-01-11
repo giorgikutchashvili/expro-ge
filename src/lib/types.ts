@@ -1,4 +1,4 @@
-export type ServiceType = 'cargo' | 'evacuator';
+export type ServiceType = 'cargo' | 'evacuator' | 'crane';
 
 export type CargoSize = 'S' | 'M' | 'L' | 'XL' | 'CONSTRUCTION';
 
@@ -37,10 +37,10 @@ export const PAYMENT_METHOD_LABELS: Record<PaymentMethodType, string> = {
 export interface Order {
   id: string;
   serviceType: ServiceType;
-  subType: CargoSize | EvacuatorType | ServiceVehicleType;
+  subType: CargoSize | EvacuatorType | ServiceVehicleType | CraneDuration;
   pickup: Location;
-  dropoff: Location;
-  distance: number;
+  dropoff?: Location;
+  distance?: number;
   customerPrice: number;
   driverPrice: number;
   phone: string;
@@ -48,10 +48,14 @@ export interface Order {
   status: OrderStatus;
   scheduledTime?: Date;
   createdAt: Date;
-  // New evacuator fields
+  // Evacuator fields
   customerVehicleType?: CustomerVehicleType;
   serviceVehicleType?: ServiceVehicleType;
   evacuatorAnswers?: EvacuatorAnswers;
+  // Crane lift fields
+  craneFloor?: CraneFloor;
+  craneCargoType?: CraneCargoType;
+  craneDuration?: CraneDuration;
 }
 
 // Driver interface
@@ -104,6 +108,44 @@ export interface CargoDriver {
   name: string;
   phone: string;
   vehicleSize: CargoSize;
+  baseLocation: string;
+  workingDays: string[];
+  workingHours: {
+    start: string;
+    end: string;
+  };
+  createdAt: Date;
+}
+
+// Crane lift types
+export type CraneFloor = 'FLOOR_1_7' | 'FLOOR_8_11' | 'FLOOR_12_20';
+export type CraneCargoType = 'FURNITURE' | 'CONSTRUCTION' | 'FRAGILE';
+export type CraneDuration = 'ONE_TIME' | 'HOURLY' | 'FULL_DAY';
+
+export const CRANE_FLOOR_LABELS: Record<CraneFloor, { title: string; surcharge: number }> = {
+  FLOOR_1_7: { title: '1 - 7 სართული', surcharge: 0 },
+  FLOOR_8_11: { title: '8 - 11 სართული', surcharge: 50 },
+  FLOOR_12_20: { title: '12 - 20 სართული', surcharge: 100 },
+};
+
+export const CRANE_CARGO_LABELS: Record<CraneCargoType, string> = {
+  FURNITURE: 'ავეჯი და პირადი ნივთები',
+  CONSTRUCTION: 'სამშენებლო მასალა / ნაგავი',
+  FRAGILE: 'მყიფე ტვირთი (შუშა / ვიტრაჟი)',
+};
+
+export const CRANE_DURATION_LABELS: Record<CraneDuration, string> = {
+  ONE_TIME: 'ერთჯერადი',
+  HOURLY: 'საათობრივი',
+  FULL_DAY: 'მთლიანი დღე',
+};
+
+// Crane driver interface
+export interface CraneDriver {
+  id: string;
+  name: string;
+  phone: string;
+  maxFloor: CraneFloor;
   baseLocation: string;
   workingDays: string[];
   workingHours: {

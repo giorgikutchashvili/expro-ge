@@ -113,11 +113,11 @@ export default function AdminDashboard() {
 
   const getStatusBadge = (status: string) => {
     const statusConfig: Record<string, { bg: string; text: string; label: string }> = {
-      pending: { bg: 'bg-yellow-100', text: 'text-yellow-700', label: 'მოლოდინში' },
-      accepted: { bg: 'bg-blue-100', text: 'text-blue-700', label: 'მიღებული' },
-      in_progress: { bg: 'bg-purple-100', text: 'text-purple-700', label: 'მიმდინარე' },
-      completed: { bg: 'bg-green-100', text: 'text-green-700', label: 'დასრულებული' },
-      cancelled: { bg: 'bg-red-100', text: 'text-red-700', label: 'გაუქმებული' },
+      pending: { bg: 'bg-yellow-500/20', text: 'text-yellow-400', label: 'მოლოდინში' },
+      accepted: { bg: 'bg-blue-500/20', text: 'text-blue-400', label: 'მიღებული' },
+      in_progress: { bg: 'bg-purple-500/20', text: 'text-purple-400', label: 'მიმდინარე' },
+      completed: { bg: 'bg-green-500/20', text: 'text-green-400', label: 'დასრულებული' },
+      cancelled: { bg: 'bg-red-500/20', text: 'text-red-400', label: 'გაუქმებული' },
     };
 
     const config = statusConfig[status] || statusConfig.pending;
@@ -182,12 +182,12 @@ export default function AdminDashboard() {
         {statsCards.map((card, index) => (
           <div
             key={index}
-            className="bg-white rounded-xl p-6 shadow-sm border border-gray-100"
+            className="bg-[#1E293B] rounded-xl p-6 border border-[#475569]"
           >
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-500">{card.title}</p>
-                <p className="text-2xl font-bold text-gray-800 mt-1">{card.value}</p>
+                <p className="text-sm text-slate-400">{card.title}</p>
+                <p className="text-2xl font-bold text-white mt-1">{card.value}</p>
               </div>
               <div className={`${card.color} p-3 rounded-lg`}>
                 <card.icon className="w-6 h-6 text-white" />
@@ -198,12 +198,12 @@ export default function AdminDashboard() {
       </div>
 
       {/* Recent Orders */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100">
-        <div className="flex items-center justify-between p-6 border-b border-gray-100">
-          <h2 className="text-lg font-semibold text-gray-800">ბოლო შეკვეთები</h2>
+      <div className="bg-[#1E293B] rounded-xl border border-[#475569]">
+        <div className="flex items-center justify-between p-6 border-b border-[#475569]">
+          <h2 className="text-lg font-semibold text-white">ბოლო შეკვეთები</h2>
           <Link
             href="/admin/orders"
-            className="flex items-center text-blue-600 hover:text-blue-700 text-sm font-medium"
+            className="flex items-center text-blue-400 hover:text-blue-300 text-sm font-medium"
           >
             ყველას ნახვა
             <ArrowRight className="w-4 h-4 ml-1" />
@@ -211,76 +211,76 @@ export default function AdminDashboard() {
         </div>
 
         {orders.length === 0 ? (
-          <div className="p-12 text-center text-gray-500">
-            <ShoppingCart className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+          <div className="p-12 text-center text-slate-400">
+            <ShoppingCart className="w-12 h-12 mx-auto mb-4 text-slate-600" />
             <p>შეკვეთები არ არის</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full">
-              <thead className="bg-gray-50">
+              <thead className="bg-[#334155]">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
                     სერვისი
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
                     მისამართი
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
                     ფასი
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
                     სტატუსი
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
                     თარიღი
                   </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100">
+              <tbody className="divide-y divide-[#475569]">
                 {orders.map((order) => (
                   <tr
                     key={order.id}
-                    className="hover:bg-gray-50 cursor-pointer transition-colors"
+                    className="hover:bg-[#334155] cursor-pointer transition-colors"
                     onClick={() => window.location.href = `/admin/orders/${order.id}`}
                   >
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
-                        <div className={`p-2 rounded-lg ${order.serviceType === 'cargo' ? 'bg-blue-100' : 'bg-orange-100'}`}>
+                        <div className={`p-2 rounded-lg ${order.serviceType === 'cargo' ? 'bg-blue-500/20' : 'bg-orange-500/20'}`}>
                           {order.serviceType === 'cargo' ? (
-                            <Package className="w-4 h-4 text-blue-600" />
+                            <Package className="w-4 h-4 text-blue-400" />
                           ) : (
-                            <Truck className="w-4 h-4 text-orange-600" />
+                            <Truck className="w-4 h-4 text-orange-400" />
                           )}
                         </div>
                         <div className="ml-3">
-                          <p className="text-sm font-medium text-gray-800">
+                          <p className="text-sm font-medium text-white">
                             {order.serviceType === 'cargo' ? 'ტვირთი' : 'ევაკუატორი'}
                           </p>
-                          <p className="text-xs text-gray-500">{order.subType}</p>
+                          <p className="text-xs text-slate-400">{order.subType}</p>
                         </div>
                       </div>
                     </td>
                     <td className="px-6 py-4">
-                      <p className="text-sm text-gray-800 truncate max-w-xs">
+                      <p className="text-sm text-white truncate max-w-xs">
                         {order.pickup?.address}
                       </p>
-                      <p className="text-xs text-gray-500 truncate max-w-xs">
+                      <p className="text-xs text-slate-400 truncate max-w-xs">
                         → {order.dropoff?.address}
                       </p>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <p className="text-sm font-semibold text-gray-800">
+                      <p className="text-sm font-semibold text-white">
                         {formatPrice(order.customerPrice)}
                       </p>
-                      <p className="text-xs text-green-600">
+                      <p className="text-xs text-green-400">
                         +{formatPrice(order.customerPrice - order.driverPrice)}
                       </p>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       {getStatusBadge(order.status)}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-400">
                       {formatDate(order.createdAt)}
                     </td>
                   </tr>

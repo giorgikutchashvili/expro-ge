@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Order, PAYMENT_METHOD_LABELS } from '@/lib/types';
+import { Order, PAYMENT_METHOD_LABELS, CRANE_FLOOR_LABELS, CRANE_CARGO_LABELS, CRANE_DURATION_LABELS } from '@/lib/types';
 import { formatPrice, formatDate } from '@/lib/utils';
 
 interface OrderConfirmationProps {
@@ -27,6 +27,7 @@ const BANK_DETAILS = {
 const serviceTypeLabels: Record<string, string> = {
   cargo: 'ტვირთის გადაზიდვა',
   evacuator: 'ევაკუატორი',
+  crane: 'ამწე ლიფტი',
 };
 
 const subTypeLabels: Record<string, string> = {
@@ -40,6 +41,9 @@ const subTypeLabels: Record<string, string> = {
   MINIBUS: 'მიკროავტობუსი',
   SPIDER: 'სპაიდერი',
   OVERSIZED: 'დიდგაბარიტიანი',
+  ONE_TIME: 'ერთჯერადი',
+  HOURLY: 'საათობრივი',
+  FULL_DAY: 'მთლიანი დღე',
 };
 
 export default function OrderConfirmation({ order, onNewOrder }: OrderConfirmationProps) {
@@ -55,10 +59,9 @@ export default function OrderConfirmation({ order, onNewOrder }: OrderConfirmati
     }
   };
 
-  // Format phone for links (remove spaces and ensure proper format)
-  const cleanPhone = order.phone.replace(/\s/g, '');
-  const whatsappPhone = cleanPhone.startsWith('+') ? cleanPhone.slice(1) : cleanPhone.startsWith('5') ? `995${cleanPhone}` : cleanPhone;
-  const telPhone = cleanPhone.startsWith('+') ? cleanPhone : cleanPhone.startsWith('5') ? `+995${cleanPhone}` : `+${cleanPhone}`;
+  // Company contact info
+  const companyPhone = '995555233344';
+  const companyTelPhone = '+995555233344';
 
   return (
     <div className="w-full max-w-lg mx-auto p-6">
@@ -119,45 +122,99 @@ export default function OrderConfirmation({ order, onNewOrder }: OrderConfirmati
             </div>
           </div>
 
-          {/* Pickup */}
+          {/* Address / Pickup */}
           <div className="flex items-start space-x-3">
             <div className="w-8 h-8 bg-green-500/20 rounded-lg flex items-center justify-center flex-shrink-0">
               <div className="w-3 h-3 bg-green-500 rounded-full" />
             </div>
             <div>
-              <p className="text-sm text-[#94A3B8]">აყვანის ადგილი</p>
+              <p className="text-sm text-[#94A3B8]">
+                {order.serviceType === 'crane' ? 'მისამართი' : 'აყვანის ადგილი'}
+              </p>
               <p className="font-medium text-[#F8FAFC]">{order.pickup.address}</p>
             </div>
           </div>
 
-          {/* Dropoff */}
-          <div className="flex items-start space-x-3">
-            <div className="w-8 h-8 bg-red-500/20 rounded-lg flex items-center justify-center flex-shrink-0">
-              <div className="w-3 h-3 bg-red-500 rounded-full" />
+          {/* Crane specific fields */}
+          {order.serviceType === 'crane' && order.craneFloor && (
+            <div className="flex items-start space-x-3">
+              <div className="w-8 h-8 bg-emerald-500/20 rounded-lg flex items-center justify-center flex-shrink-0">
+                <svg className="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <rect x="3" y="3" width="18" height="18" rx="2" />
+                  <path d="M3 9h18" />
+                  <path d="M9 3v18" />
+                </svg>
+              </div>
+              <div>
+                <p className="text-sm text-[#94A3B8]">სართული</p>
+                <p className="font-medium text-[#F8FAFC]">{CRANE_FLOOR_LABELS[order.craneFloor].title}</p>
+              </div>
             </div>
-            <div>
-              <p className="text-sm text-[#94A3B8]">ჩაბარების ადგილი</p>
-              <p className="font-medium text-[#F8FAFC]">{order.dropoff.address}</p>
-            </div>
-          </div>
+          )}
 
-          {/* Distance */}
-          <div className="flex items-start space-x-3">
-            <div className="w-8 h-8 bg-purple-500/20 rounded-lg flex items-center justify-center flex-shrink-0">
-              <svg className="w-4 h-4 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"
-                />
-              </svg>
+          {order.serviceType === 'crane' && order.craneCargoType && (
+            <div className="flex items-start space-x-3">
+              <div className="w-8 h-8 bg-teal-500/20 rounded-lg flex items-center justify-center flex-shrink-0">
+                <svg className="w-4 h-4 text-teal-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <rect x="3" y="8" width="18" height="8" rx="1" />
+                  <path d="M5 16v3" />
+                  <path d="M19 16v3" />
+                </svg>
+              </div>
+              <div>
+                <p className="text-sm text-[#94A3B8]">ტვირთის ტიპი</p>
+                <p className="font-medium text-[#F8FAFC]">{CRANE_CARGO_LABELS[order.craneCargoType]}</p>
+              </div>
             </div>
-            <div>
-              <p className="text-sm text-[#94A3B8]">მანძილი</p>
-              <p className="font-medium text-[#F8FAFC]">{order.distance} კმ</p>
+          )}
+
+          {order.serviceType === 'crane' && order.craneDuration && (
+            <div className="flex items-start space-x-3">
+              <div className="w-8 h-8 bg-cyan-500/20 rounded-lg flex items-center justify-center flex-shrink-0">
+                <svg className="w-4 h-4 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <circle cx="12" cy="12" r="9" />
+                  <path d="M12 6v6l4 2" />
+                </svg>
+              </div>
+              <div>
+                <p className="text-sm text-[#94A3B8]">ხანგრძლივობა</p>
+                <p className="font-medium text-[#F8FAFC]">{CRANE_DURATION_LABELS[order.craneDuration]}</p>
+              </div>
             </div>
-          </div>
+          )}
+
+          {/* Dropoff - only for non-crane services */}
+          {order.dropoff && (
+            <div className="flex items-start space-x-3">
+              <div className="w-8 h-8 bg-red-500/20 rounded-lg flex items-center justify-center flex-shrink-0">
+                <div className="w-3 h-3 bg-red-500 rounded-full" />
+              </div>
+              <div>
+                <p className="text-sm text-[#94A3B8]">ჩაბარების ადგილი</p>
+                <p className="font-medium text-[#F8FAFC]">{order.dropoff.address}</p>
+              </div>
+            </div>
+          )}
+
+          {/* Distance - only for non-crane services */}
+          {order.distance && (
+            <div className="flex items-start space-x-3">
+              <div className="w-8 h-8 bg-purple-500/20 rounded-lg flex items-center justify-center flex-shrink-0">
+                <svg className="w-4 h-4 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"
+                  />
+                </svg>
+              </div>
+              <div>
+                <p className="text-sm text-[#94A3B8]">მანძილი</p>
+                <p className="font-medium text-[#F8FAFC]">{order.distance} კმ</p>
+              </div>
+            </div>
+          )}
 
           {/* Payment Method */}
           {order.paymentMethod && (
@@ -314,7 +371,7 @@ export default function OrderConfirmation({ order, onNewOrder }: OrderConfirmati
       <div className="flex space-x-3 mb-4">
         {/* WhatsApp Button */}
         <a
-          href={`https://wa.me/${whatsappPhone}`}
+          href={`https://wa.me/${companyPhone}`}
           target="_blank"
           rel="noopener noreferrer"
           className="flex-1 flex items-center justify-center space-x-2 py-3 px-4
@@ -329,7 +386,7 @@ export default function OrderConfirmation({ order, onNewOrder }: OrderConfirmati
 
         {/* Call Button */}
         <a
-          href={`tel:${telPhone}`}
+          href={`tel:${companyTelPhone}`}
           className="flex-1 flex items-center justify-center space-x-2 py-3 px-4
                     bg-blue-500 hover:bg-blue-600 text-white rounded-xl
                     transition-all duration-200 shadow-md hover:shadow-lg"

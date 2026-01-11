@@ -6,12 +6,16 @@ interface TelegramOrderRequest {
   pickupAddress: string;
   pickupLat: number;
   pickupLng: number;
-  dropoffAddress: string;
-  dropoffLat: number;
-  dropoffLng: number;
+  dropoffAddress?: string;
+  dropoffLat?: number;
+  dropoffLng?: number;
   customerPrice: number;
   phone: string;
-  distance: number;
+  distance?: number;
+  // Crane fields
+  craneFloor?: string;
+  craneCargoType?: string;
+  craneDuration?: string;
 }
 
 export async function POST(request: NextRequest) {
@@ -33,15 +37,41 @@ export async function POST(request: NextRequest) {
       customerPrice,
       phone,
       distance,
+      craneFloor,
+      craneCargoType,
+      craneDuration,
     } = body;
 
-    const serviceLabel = serviceType === 'cargo' ? 'ტვირთი' : 'ევაკუატორი';
+    let message: string;
 
-    // Create Google Maps links with exact coordinates
-    const pickupMapLink = `https://www.google.com/maps?q=${pickupLat},${pickupLng}`;
-    const dropoffMapLink = `https://www.google.com/maps?q=${dropoffLat},${dropoffLng}`;
+    if (serviceType === 'crane') {
+      // Crane order message format
+      const addressMapLink = `https://www.google.com/maps?q=${pickupLat},${pickupLng}`;
 
-    const message = `
+      message = `
+🏗 ახალი შეკვეთა - ამწე ლიფტი
+
+📍 მისამართი: ${pickupAddress}
+🗺 ${addressMapLink}
+
+🏢 სართული: ${craneFloor || '-'}
+📦 ტვირთის ტიპი: ${craneCargoType || '-'}
+⏱ ხანგრძლივობა: ${craneDuration || '-'}
+
+💰 ფასი: ${customerPrice}₾
+📞 ტელეფონი: ${phone}
+      `.trim();
+    } else {
+      // Cargo/Evacuator order message format
+      const serviceLabel = serviceType === 'cargo' ? 'ტვირთი' : 'ევაკუატორი';
+
+      // Create Google Maps links with exact coordinates
+      const pickupMapLink = `https://www.google.com/maps?q=${pickupLat},${pickupLng}`;
+      const dropoffMapLink = dropoffLat && dropoffLng
+        ? `https://www.google.com/maps?q=${dropoffLat},${dropoffLng}`
+        : '';
+
+      message = `
 🚗 ახალი შეკვეთა!
 
 📦 სერვისი: ${serviceLabel} (${subType})
@@ -49,13 +79,14 @@ export async function POST(request: NextRequest) {
 📍 აყვანა: ${pickupAddress}
 🗺 ${pickupMapLink}
 
-📍 ჩაბარება: ${dropoffAddress}
+📍 ჩაბარება: ${dropoffAddress || '-'}
 🗺 ${dropoffMapLink}
 
-📏 მანძილი: ${distance.toFixed(1)} კმ
+📏 მანძილი: ${distance?.toFixed(1) || '0'} კმ
 💰 ფასი: ${customerPrice}₾
 📞 ტელეფონი: ${phone}
-    `.trim();
+      `.trim();
+    }
 
     const botToken = process.env.TELEGRAM_BOT_TOKEN;
     const chatId = process.env.TELEGRAM_CHAT_ID;

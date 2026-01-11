@@ -133,3 +133,28 @@ export const SERVICE_VEHICLE_PRICES: Record<string, PriceInfo> = {
     perKmProfit: 0.3,
   },
 };
+
+// Crane lift prices (by duration type)
+export interface CranePriceInfo {
+  customerPrice: number;
+  driverPrice: number;
+  profit: number;
+}
+
+export const CRANE_PRICES: Record<string, CranePriceInfo> = {
+  ONE_TIME: {
+    customerPrice: 100,
+    driverPrice: 80,
+    profit: 20,
+  },
+  HOURLY: {
+    customerPrice: 150,
+    driverPrice: 120,
+    profit: 30,
+  },
+  FULL_DAY: {
+    customerPrice: 500,
+    driverPrice: 400,
+    profit: 100,
+  },
+};
