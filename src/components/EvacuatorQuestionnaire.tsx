@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { CustomerVehicleType, EvacuatorAnswers, ServiceVehicleType } from '@/lib/types';
+import { useTranslation } from '@/contexts/LanguageContext';
 
 interface EvacuatorQuestionnaireProps {
   vehicleType: CustomerVehicleType;
@@ -11,19 +12,19 @@ interface EvacuatorQuestionnaireProps {
 
 interface Question {
   key: keyof EvacuatorAnswers;
-  text: string;
+  textKey: 'wheelLocked' | 'steeringLocked' | 'goesNeutral';
 }
 
 // Questions for different vehicle types
 const SEDAN_SUV_QUESTIONS: Question[] = [
-  { key: 'wheelLocked', text: 'საბურავი დაბლოკილია?' },
-  { key: 'steeringLocked', text: 'საჭე დაბლოკილია?' },
-  { key: 'goesNeutral', text: 'ვარდება ნეიტრალში?' },
+  { key: 'wheelLocked', textKey: 'wheelLocked' },
+  { key: 'steeringLocked', textKey: 'steeringLocked' },
+  { key: 'goesNeutral', textKey: 'goesNeutral' },
 ];
 
 const MINIBUS_QUESTIONS: Question[] = [
-  { key: 'wheelLocked', text: 'საბურავი დაბლოკილია?' },
-  { key: 'steeringLocked', text: 'საჭე დაბლოკილია?' },
+  { key: 'wheelLocked', textKey: 'wheelLocked' },
+  { key: 'steeringLocked', textKey: 'steeringLocked' },
 ];
 
 // Determine service vehicle type based on answers
@@ -84,6 +85,7 @@ export default function EvacuatorQuestionnaire({
   onBack,
 }: EvacuatorQuestionnaireProps) {
   const [answers, setAnswers] = useState<EvacuatorAnswers>({});
+  const t = useTranslation();
 
   // Get questions based on vehicle type
   const questions = vehicleType === 'MINIBUS' ? MINIBUS_QUESTIONS : SEDAN_SUV_QUESTIONS;
@@ -104,12 +106,9 @@ export default function EvacuatorQuestionnaire({
     <div className="space-y-6 max-w-md mx-auto">
       {/* Header */}
       <div className="text-center">
-        <h2 className="text-xl font-bold text-gray-800 mb-2">
-          შეავსეთ კითხვარი
+        <h2 className="text-xl font-bold text-[#F8FAFC] mb-2">
+          {t.evacuatorQuestionnaire.title}
         </h2>
-        <p className="text-gray-500 text-sm">
-          გთხოვთ უპასუხოთ კითხვებს სწორად შესაფერისი ევაკუატორის შესარჩევად
-        </p>
       </div>
 
       {/* Questions */}
@@ -117,9 +116,9 @@ export default function EvacuatorQuestionnaire({
         {questions.map((question) => (
           <div
             key={question.key}
-            className="bg-white rounded-xl p-5 shadow-sm border border-gray-100"
+            className="bg-[#1E293B] rounded-xl p-5 shadow-sm border border-[#475569]"
           >
-            <p className="font-medium text-gray-800 mb-4">{question.text}</p>
+            <p className="font-medium text-[#F8FAFC] mb-4">{t.evacuatorQuestionnaire[question.textKey]}</p>
 
             <div className="flex space-x-3">
               <button
@@ -128,11 +127,11 @@ export default function EvacuatorQuestionnaire({
                   flex-1 py-3 px-4 rounded-lg font-medium transition-all
                   ${answers[question.key] === true
                     ? 'bg-orange-500 text-white shadow-md'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    : 'bg-[#334155] text-[#94A3B8] hover:bg-[#475569]'
                   }
                 `}
               >
-                დიახ
+                {t.evacuatorQuestionnaire.yes}
               </button>
               <button
                 onClick={() => handleAnswer(question.key, false)}
@@ -140,11 +139,11 @@ export default function EvacuatorQuestionnaire({
                   flex-1 py-3 px-4 rounded-lg font-medium transition-all
                   ${answers[question.key] === false
                     ? 'bg-orange-500 text-white shadow-md'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    : 'bg-[#334155] text-[#94A3B8] hover:bg-[#475569]'
                   }
                 `}
               >
-                არა
+                {t.evacuatorQuestionnaire.no}
               </button>
             </div>
           </div>
@@ -159,22 +158,22 @@ export default function EvacuatorQuestionnaire({
           w-full py-4 rounded-xl font-semibold text-white transition-all
           ${allAnswered
             ? 'bg-orange-500 hover:bg-orange-600 shadow-lg'
-            : 'bg-gray-300 cursor-not-allowed'
+            : 'bg-[#334155] text-[#64748B] cursor-not-allowed'
           }
         `}
       >
-        გაგრძელება
+        {t.evacuatorQuestionnaire.continue}
       </button>
 
       {/* Back Button */}
       <button
         onClick={onBack}
-        className="flex items-center space-x-2 text-gray-600 hover:text-gray-800 transition-colors mx-auto"
+        className="flex items-center space-x-2 text-[#94A3B8] hover:text-[#F8FAFC] transition-colors mx-auto"
       >
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
         </svg>
-        <span>უკან</span>
+        <span>{t.navigation.back}</span>
       </button>
     </div>
   );

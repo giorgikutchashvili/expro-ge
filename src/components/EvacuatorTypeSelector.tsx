@@ -1,6 +1,7 @@
 'use client';
 
-import { CustomerVehicleType, CUSTOMER_VEHICLE_LABELS } from '@/lib/types';
+import { CustomerVehicleType } from '@/lib/types';
+import { useTranslation } from '@/contexts/LanguageContext';
 
 interface EvacuatorTypeSelectorProps {
   selected: CustomerVehicleType | null;
@@ -114,15 +115,17 @@ export default function EvacuatorTypeSelector({
   onSelect,
   onBack,
 }: EvacuatorTypeSelectorProps) {
+  const t = useTranslation();
+
   return (
     <div className="space-y-4 sm:space-y-6 max-w-[480px] mx-auto">
       {/* Header */}
       <div className="text-center">
         <h2 className="text-xl sm:text-2xl font-bold text-[#F8FAFC] mb-2">
-          რა ტიპის მანქანას ევაკუირებთ?
+          {t.evacuatorTypeSelector.title}
         </h2>
         <p className="text-[#94A3B8] text-sm">
-          აირჩიეთ თქვენი სატრანსპორტო საშუალების ტიპი
+          {t.evacuatorTypeSelector.subtitle}
         </p>
       </div>
 
@@ -130,7 +133,7 @@ export default function EvacuatorTypeSelector({
       <div className="flex flex-col gap-3">
         {vehicleOrder.map((type) => {
           const Icon = vehicleIcons[type];
-          const label = CUSTOMER_VEHICLE_LABELS[type];
+          const label = t.evacuatorTypeSelector.types[type];
           const isSelected = selected === type;
 
           return (
@@ -186,7 +189,7 @@ export default function EvacuatorTypeSelector({
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
         </svg>
-        <span>უკან</span>
+        <span>{t.navigation.back}</span>
       </button>
     </div>
   );

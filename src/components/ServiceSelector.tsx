@@ -2,6 +2,7 @@
 
 import { ServiceType } from '@/lib/types';
 import { CargoTruckIcon, TowTruckIcon } from '@/components/icons';
+import { useTranslation } from '@/contexts/LanguageContext';
 
 interface ServiceSelectorProps {
   onSelect: (serviceType: ServiceType) => void;
@@ -20,15 +21,17 @@ function CraneLiftIcon({ className }: { className?: string }) {
 }
 
 export default function ServiceSelector({ onSelect }: ServiceSelectorProps) {
+  const t = useTranslation();
+
   return (
     <div className="space-y-6 max-w-[480px] mx-auto">
       {/* Header */}
       <div className="text-center">
         <h2 className="text-2xl font-bold text-[#F8FAFC] mb-2">
-          აირჩიეთ სერვისი
+          {t.serviceSelector.title}
         </h2>
         <p className="text-[#94A3B8] text-sm">
-          რა ტიპის სერვისი გჭირდებათ?
+          {t.serviceSelector.subtitle}
         </p>
       </div>
 
@@ -51,10 +54,10 @@ export default function ServiceSelector({ onSelect }: ServiceSelectorProps) {
           {/* Text */}
           <div className="text-left ml-5 flex-1">
             <h3 className="font-bold text-2xl text-white mb-1">
-              ტვირთის გადაზიდვა
+              {t.serviceSelector.cargo.title}
             </h3>
             <p className="text-sm text-white/80">
-              სხვადასხვა ზომის ტვირთების გადაზიდვა
+              {t.serviceSelector.cargo.description}
             </p>
           </div>
 
@@ -83,10 +86,10 @@ export default function ServiceSelector({ onSelect }: ServiceSelectorProps) {
           {/* Text */}
           <div className="text-left ml-5 flex-1">
             <h3 className="font-bold text-2xl text-white mb-1">
-              ევაკუატორი
+              {t.serviceSelector.evacuator.title}
             </h3>
             <p className="text-sm text-white/80">
-              ავტომობილის ტრანსპორტირება
+              {t.serviceSelector.evacuator.description}
             </p>
           </div>
 
@@ -115,10 +118,10 @@ export default function ServiceSelector({ onSelect }: ServiceSelectorProps) {
           {/* Text */}
           <div className="text-left ml-5 flex-1">
             <h3 className="font-bold text-2xl text-white mb-1">
-              ამწე ლიფტი
+              {t.serviceSelector.crane.title}
             </h3>
             <p className="text-sm text-white/80">
-              სართულებზე ტვირთის აწევა-ჩამოწევა
+              {t.serviceSelector.crane.description}
             </p>
           </div>
 

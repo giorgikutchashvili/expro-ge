@@ -537,7 +537,7 @@ export default function OrderDetailsPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="flex items-center space-x-4">
           <button
             onClick={() => router.back()}
@@ -561,45 +561,45 @@ export default function OrderDetailsPage() {
         </div>
 
         {/* Edit/Delete/Save/Cancel buttons */}
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center space-x-2 ml-auto sm:ml-0">
           {isEditMode ? (
             <>
               <button
                 onClick={handleEditCancel}
                 disabled={isSaving}
-                className="flex items-center space-x-2 px-4 py-2 border border-[#475569] text-slate-300 rounded-lg hover:bg-[#334155] transition-colors disabled:opacity-50"
+                className="flex items-center space-x-2 px-3 sm:px-4 py-2 border border-[#475569] text-slate-300 rounded-lg hover:bg-[#334155] transition-colors disabled:opacity-50"
               >
                 <X className="w-4 h-4" />
-                <span>გაუქმება</span>
+                <span className="hidden sm:inline">გაუქმება</span>
               </button>
               <button
                 onClick={handleEditSave}
                 disabled={isSaving}
-                className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+                className="flex items-center space-x-2 px-3 sm:px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
               >
                 {isSaving ? (
                   <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                 ) : (
                   <Save className="w-4 h-4" />
                 )}
-                <span>შენახვა</span>
+                <span className="hidden sm:inline">შენახვა</span>
               </button>
             </>
           ) : (
             <>
               <button
                 onClick={() => setIsEditMode(true)}
-                className="flex items-center space-x-2 px-4 py-2 text-blue-400 border border-blue-500/30 rounded-lg hover:bg-blue-500/20 transition-colors"
+                className="flex items-center space-x-2 px-3 sm:px-4 py-2 text-blue-400 border border-blue-500/30 rounded-lg hover:bg-blue-500/20 transition-colors"
               >
                 <Pencil className="w-4 h-4" />
-                <span>რედაქტირება</span>
+                <span className="hidden sm:inline">რედაქტირება</span>
               </button>
               <button
                 onClick={() => setDeleteModalOpen(true)}
-                className="flex items-center space-x-2 px-4 py-2 text-red-400 border border-red-500/30 rounded-lg hover:bg-red-500/20 transition-colors"
+                className="flex items-center space-x-2 px-3 sm:px-4 py-2 text-red-400 border border-red-500/30 rounded-lg hover:bg-red-500/20 transition-colors"
               >
                 <Trash2 className="w-4 h-4" />
-                <span>წაშლა</span>
+                <span className="hidden sm:inline">წაშლა</span>
               </button>
             </>
           )}

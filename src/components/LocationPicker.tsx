@@ -3,6 +3,7 @@
 import { useCallback, useState, useRef, useEffect } from 'react';
 import { GoogleMap, Marker, DirectionsRenderer } from '@react-google-maps/api';
 import { Location } from '@/lib/types';
+import { useTranslation } from '@/contexts/LanguageContext';
 
 interface LocationPickerProps {
   pickup: Location | null;
@@ -49,6 +50,7 @@ export default function LocationPicker({
   distance,
   onDistanceChange,
 }: LocationPickerProps) {
+  const t = useTranslation();
   const [directions, setDirections] = useState<google.maps.DirectionsResult | null>(null);
   const [pickupInput, setPickupInput] = useState(pickup?.address || '');
   const [dropoffInput, setDropoffInput] = useState(dropoff?.address || '');
@@ -283,14 +285,14 @@ export default function LocationPicker({
           }
         } else {
           if (type === 'pickup') {
-            setPickupError('მისამართი ვერ მოიძებნა');
+            setPickupError(t.locationPicker.addressNotFound);
           } else {
-            setDropoffError('მისამართი ვერ მოიძებნა');
+            setDropoffError(t.locationPicker.addressNotFound);
           }
         }
       }
     );
-  }, [onPickupChange, onDropoffChange]);
+  }, [onPickupChange, onDropoffChange, t.locationPicker.addressNotFound]);
 
   // Handle suggestion selection
   const handleSuggestionSelect = async (suggestion: PlaceSuggestion, type: 'pickup' | 'dropoff') => {
@@ -407,7 +409,7 @@ export default function LocationPicker({
 
   const handlePickupSearch = () => {
     if (!pickupInput.trim()) {
-      setPickupError('გთხოვთ შეიყვანოთ მისამართი');
+      setPickupError(t.locationPicker.enterAddress);
       return;
     }
     setShowPickupSuggestions(false);
@@ -416,7 +418,7 @@ export default function LocationPicker({
 
   const handleDropoffSearch = () => {
     if (!dropoffInput.trim()) {
-      setDropoffError('გთხოვთ შეიყვანოთ მისამართი');
+      setDropoffError(t.locationPicker.enterAddress);
       return;
     }
     setShowDropoffSuggestions(false);
@@ -517,14 +519,14 @@ export default function LocationPicker({
     <div className="w-full max-w-4xl mx-auto space-y-6">
       {/* Location Inputs */}
       <div className="bg-[#1E293B] rounded-xl p-4 sm:p-6 shadow-md space-y-3 sm:space-y-4 border border-[#475569]">
-        <h3 className="text-base sm:text-lg font-semibold text-[#F8FAFC] mb-3 sm:mb-4">მისამართები</h3>
+        <h3 className="text-base sm:text-lg font-semibold text-[#F8FAFC] mb-3 sm:mb-4">{t.locationPicker.title}</h3>
 
         {/* Pickup Input */}
         <div ref={pickupContainerRef}>
           <label className="block text-sm font-medium text-[#94A3B8] mb-2">
             <span className="flex items-center space-x-2">
               <span className="w-3 h-3 bg-green-500 rounded-full"></span>
-              <span>აყვანის ადგილი</span>
+              <span>{t.locationPicker.pickupLabel}</span>
             </span>
           </label>
           <div className="flex flex-col sm:flex-row gap-2">
@@ -535,7 +537,7 @@ export default function LocationPicker({
                 onChange={handlePickupInputChange}
                 onFocus={() => pickupInput.length >= 2 && setShowPickupSuggestions(true)}
                 onKeyDown={handlePickupKeyDown}
-                placeholder="ჩაწერეთ მისამართი..."
+                placeholder={t.locationPicker.pickupPlaceholder}
                 className={`w-full px-3 sm:px-4 py-2.5 sm:py-3 pr-10 border rounded-lg focus:ring-2
                          focus:ring-blue-500 focus:border-transparent outline-none transition-all
                          text-sm sm:text-base text-[#F8FAFC] placeholder:text-[#64748B] bg-[#334155]
@@ -600,7 +602,7 @@ export default function LocationPicker({
                 type="button"
                 className="px-3 sm:px-4 py-2.5 sm:py-3 bg-green-500 hover:bg-green-600 disabled:bg-green-300
                          text-white rounded-lg transition-colors flex items-center space-x-1 sm:space-x-2"
-                title="ძებნა"
+                title={t.locationPicker.search}
               >
                 {isSearchingPickup ? (
                   <svg className="w-4 h-4 sm:w-5 sm:h-5 animate-spin" fill="none" viewBox="0 0 24 24">
@@ -612,7 +614,7 @@ export default function LocationPicker({
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                   </svg>
                 )}
-                <span className="hidden sm:inline">ძებნა</span>
+                <span className="hidden sm:inline">{t.locationPicker.search}</span>
               </button>
 
               {/* Map Selection Button */}
@@ -623,7 +625,7 @@ export default function LocationPicker({
                           ${selectionMode === 'pickup'
                             ? 'bg-green-600 text-white'
                             : 'bg-[#334155] text-[#94A3B8] hover:bg-[#475569]'}`}
-                title="აირჩიეთ რუკაზე"
+                title={t.locationPicker.selectOnMap}
               >
                 <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
@@ -650,7 +652,7 @@ export default function LocationPicker({
           <label className="block text-sm font-medium text-[#94A3B8] mb-2">
             <span className="flex items-center space-x-2">
               <span className="w-3 h-3 bg-red-500 rounded-full"></span>
-              <span>ჩაბარების ადგილი</span>
+              <span>{t.locationPicker.dropoffLabel}</span>
             </span>
           </label>
           <div className="flex flex-col sm:flex-row gap-2">
@@ -661,7 +663,7 @@ export default function LocationPicker({
                 onChange={handleDropoffInputChange}
                 onFocus={() => dropoffInput.length >= 2 && setShowDropoffSuggestions(true)}
                 onKeyDown={handleDropoffKeyDown}
-                placeholder="ჩაწერეთ მისამართი..."
+                placeholder={t.locationPicker.dropoffPlaceholder}
                 className={`w-full px-3 sm:px-4 py-2.5 sm:py-3 pr-10 border rounded-lg focus:ring-2
                          focus:ring-blue-500 focus:border-transparent outline-none transition-all
                          text-sm sm:text-base text-[#F8FAFC] placeholder:text-[#64748B] bg-[#334155]
@@ -726,7 +728,7 @@ export default function LocationPicker({
                 type="button"
                 className="px-3 sm:px-4 py-2.5 sm:py-3 bg-red-500 hover:bg-red-600 disabled:bg-red-300
                          text-white rounded-lg transition-colors flex items-center space-x-1 sm:space-x-2"
-                title="ძებნა"
+                title={t.locationPicker.search}
               >
                 {isSearchingDropoff ? (
                   <svg className="w-4 h-4 sm:w-5 sm:h-5 animate-spin" fill="none" viewBox="0 0 24 24">
@@ -738,7 +740,7 @@ export default function LocationPicker({
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                   </svg>
                 )}
-                <span className="hidden sm:inline">ძებნა</span>
+                <span className="hidden sm:inline">{t.locationPicker.search}</span>
               </button>
 
               {/* Map Selection Button */}
@@ -749,7 +751,7 @@ export default function LocationPicker({
                           ${selectionMode === 'dropoff'
                             ? 'bg-red-600 text-white'
                             : 'bg-[#334155] text-[#94A3B8] hover:bg-[#475569]'}`}
-                title="აირჩიეთ რუკაზე"
+                title={t.locationPicker.selectOnMap}
               >
                 <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
@@ -783,7 +785,7 @@ export default function LocationPicker({
               />
             </svg>
             <span className="text-[#60A5FA] font-medium">
-              მანძილი: <span className="text-lg font-bold">{distance} კმ</span>
+              {t.locationPicker.distance}: <span className="text-lg font-bold">{distance} {t.locationPicker.km}</span>
             </span>
           </div>
         )}
@@ -798,7 +800,7 @@ export default function LocationPicker({
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122" />
           </svg>
           <span className="font-medium">
-            დააწკაპუნეთ რუკაზე {selectionMode === 'pickup' ? 'აყვანის' : 'ჩაბარების'} ადგილის ასარჩევად
+            {selectionMode === 'pickup' ? t.locationPicker.clickToSelectPickup : t.locationPicker.clickToSelectDropoff}
           </span>
           <button
             onClick={() => setSelectionMode(null)}

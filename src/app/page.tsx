@@ -3,8 +3,9 @@
 import { useState, useCallback } from 'react';
 import { collection, addDoc, Timestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { ServiceType, CargoSize, EvacuatorType, Location, Order, CustomerVehicleType, ServiceVehicleType, EvacuatorAnswers, SERVICE_VEHICLE_LABELS, CUSTOMER_VEHICLE_LABELS, PaymentMethodType, CraneFloor, CraneCargoType, CraneDuration, CRANE_FLOOR_LABELS, CRANE_CARGO_LABELS, CRANE_DURATION_LABELS } from '@/lib/types';
+import { ServiceType, CargoSize, EvacuatorType, Location, Order, CustomerVehicleType, ServiceVehicleType, EvacuatorAnswers, PaymentMethodType, CraneFloor, CraneCargoType, CraneDuration } from '@/lib/types';
 import { usePricing } from '@/hooks/usePricing';
+import { useTranslation, useLanguage } from '@/contexts/LanguageContext';
 
 import GoogleMapsProvider from '@/components/GoogleMapsProvider';
 import ServiceSelector from '@/components/ServiceSelector';
@@ -18,21 +19,26 @@ import EvacuatorTypeSelector from '@/components/EvacuatorTypeSelector';
 import EvacuatorQuestionnaire, { needsQuestionnaire, getDirectServiceType } from '@/components/EvacuatorQuestionnaire';
 import CraneLiftSelector from '@/components/CraneLiftSelector';
 import CookieBanner from '@/components/CookieBanner';
+import LanguageSwitcher from '@/components/LanguageSwitcher';
 import Link from 'next/link';
 
 type Step = 1 | 2 | 2.5 | 3 | 5 | 6 | 7;
 
-const stepTitles: Record<Step, string> = {
-  1: 'სერვისი',
-  2: 'ტიპი',
-  2.5: 'კითხვარი',
-  3: 'მისამართი',
-  5: 'დრო',
-  6: 'დადასტურება',
-  7: 'დასრულება',
-};
-
 export default function Home() {
+  const t = useTranslation();
+  const { language } = useLanguage();
+
+  // Step titles from translations
+  const stepTitles: Record<Step, string> = {
+    1: t.header.stepTitles.service,
+    2: t.header.stepTitles.type,
+    2.5: t.header.stepTitles.questionnaire,
+    3: t.header.stepTitles.address,
+    5: t.header.stepTitles.time,
+    6: t.header.stepTitles.confirmation,
+    7: t.header.stepTitles.complete,
+  };
+
   // Step management
   const [currentStep, setCurrentStep] = useState<Step>(1);
 
@@ -283,7 +289,7 @@ export default function Home() {
       setCurrentStep(7);
     } catch (error) {
       console.error('Error submitting order:', error);
-      alert('შეკვეთის გაგზავნა ვერ მოხერხდა. გთხოვთ სცადოთ თავიდან.');
+      alert(`${t.errors.orderFailed} ${t.errors.tryAgain}`);
     } finally {
       setIsLoading(false);
     }
@@ -318,6 +324,22 @@ export default function Home() {
     ? pickup
     : pickup && dropoff && distance;
 
+  // Get locale for date formatting
+  const getLocale = () => {
+    switch (language) {
+      case 'en': return 'en-US';
+      case 'ru': return 'ru-RU';
+      default: return 'ka-GE';
+    }
+  };
+
+  // Get service label for order summary
+  const getServiceLabel = () => {
+    if (serviceType === 'cargo') return `${t.orderSummary.cargo} (${subType})`;
+    if (serviceType === 'crane') return t.orderSummary.crane;
+    return t.orderSummary.evacuator;
+  };
+
   return (
     <GoogleMapsProvider>
       <div className="min-h-screen">
@@ -348,70 +370,75 @@ export default function Home() {
                 <span className="text-2xl font-bold text-[#F8FAFC]">EXPRO.GE</span>
               </button>
 
-              {/* Step Indicator */}
-              {currentStep < 7 && (
-                <div className="hidden sm:flex items-center space-x-2">
-                  {[1, 2, 3, 4, 5].map((step) => {
-                    // Map current step to display position (step 4 is skipped, so 5->4, 6->5)
-                    const currentActual = currentStep === 2.5 ? 2 : Math.floor(currentStep);
-                    const displayCurrent = currentActual <= 3 ? currentActual : currentActual - 1;
+              <div className="flex items-center space-x-4">
+                {/* Language Switcher */}
+                <LanguageSwitcher />
 
-                    return (
-                      <div key={step} className="flex items-center">
-                        <div
-                          className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold transition-all duration-200 shadow-sm
-                            ${
-                              step === displayCurrent
-                                ? 'bg-gradient-to-br from-[#3B82F6] to-[#2563EB] text-white shadow-md'
-                                : step < displayCurrent
-                                ? 'bg-gradient-to-br from-[#10B981] to-[#059669] text-white'
-                                : 'bg-[#334155] text-[#94A3B8]'
-                            }`}
-                        >
-                          {step < displayCurrent ? (
-                            <svg
-                              className="w-4 h-4"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2.5}
-                                d="M5 13l4 4L19 7"
-                              />
-                            </svg>
-                          ) : (
-                            step
+                {/* Step Indicator */}
+                {currentStep < 7 && (
+                  <div className="hidden sm:flex items-center space-x-2">
+                    {[1, 2, 3, 4, 5].map((step) => {
+                      // Map current step to display position (step 4 is skipped, so 5->4, 6->5)
+                      const currentActual = currentStep === 2.5 ? 2 : Math.floor(currentStep);
+                      const displayCurrent = currentActual <= 3 ? currentActual : currentActual - 1;
+
+                      return (
+                        <div key={step} className="flex items-center">
+                          <div
+                            className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold transition-all duration-200 shadow-sm
+                              ${
+                                step === displayCurrent
+                                  ? 'bg-gradient-to-br from-[#3B82F6] to-[#2563EB] text-white shadow-md'
+                                  : step < displayCurrent
+                                  ? 'bg-gradient-to-br from-[#10B981] to-[#059669] text-white'
+                                  : 'bg-[#334155] text-[#94A3B8]'
+                              }`}
+                          >
+                            {step < displayCurrent ? (
+                              <svg
+                                className="w-4 h-4"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2.5}
+                                  d="M5 13l4 4L19 7"
+                                />
+                              </svg>
+                            ) : (
+                              step
+                            )}
+                          </div>
+                          {step < 5 && (
+                            <div
+                              className={`w-6 h-1 mx-0.5 rounded-full transition-all duration-200 ${
+                                step < displayCurrent ? 'bg-[#10B981]' : 'bg-[#475569]'
+                              }`}
+                            />
                           )}
                         </div>
-                        {step < 5 && (
-                          <div
-                            className={`w-6 h-1 mx-0.5 rounded-full transition-all duration-200 ${
-                              step < displayCurrent ? 'bg-[#10B981]' : 'bg-[#475569]'
-                            }`}
-                          />
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-
-              {/* Mobile Step Indicator */}
-              {currentStep < 7 && (
-                <div className="sm:hidden">
-                  <div className="flex items-center space-x-2">
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#3B82F6] to-[#2563EB] text-white flex items-center justify-center text-sm font-bold">
-                      {Math.floor(currentStep)}
-                    </div>
-                    <span className="text-sm font-medium text-[#94A3B8]">
-                      {stepTitles[currentStep]}
-                    </span>
+                      );
+                    })}
                   </div>
-                </div>
-              )}
+                )}
+
+                {/* Mobile Step Indicator */}
+                {currentStep < 7 && (
+                  <div className="sm:hidden">
+                    <div className="flex items-center space-x-2">
+                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#3B82F6] to-[#2563EB] text-white flex items-center justify-center text-sm font-bold">
+                        {Math.floor(currentStep)}
+                      </div>
+                      <span className="text-sm font-medium text-[#94A3B8]">
+                        {stepTitles[currentStep]}
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </header>
@@ -477,7 +504,7 @@ export default function Home() {
                       d="M15 19l-7-7 7-7"
                     />
                   </svg>
-                  <span>უკან</span>
+                  <span>{t.navigation.back}</span>
                 </button>
                 <button
                   onClick={handleNewOrder}
@@ -496,7 +523,7 @@ export default function Home() {
                       d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
                     />
                   </svg>
-                  <span>თავიდან</span>
+                  <span>{t.navigation.home}</span>
                 </button>
               </div>
 
@@ -504,7 +531,7 @@ export default function Home() {
                 <SingleLocationPicker
                   location={pickup}
                   onLocationChange={setPickup}
-                  label="მისამართი"
+                  label={t.locationPicker.addressLabel}
                 />
               ) : (
                 <LocationPicker
@@ -529,7 +556,7 @@ export default function Home() {
                         : 'bg-[#334155] text-[#64748B] cursor-not-allowed'
                     }`}
                 >
-                  გაგრძელება
+                  {t.navigation.continue}
                 </button>
               </div>
             </div>
@@ -557,7 +584,7 @@ export default function Home() {
                       d="M15 19l-7-7 7-7"
                     />
                   </svg>
-                  <span>უკან</span>
+                  <span>{t.navigation.back}</span>
                 </button>
                 <button
                   onClick={handleNewOrder}
@@ -576,7 +603,7 @@ export default function Home() {
                       d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
                     />
                   </svg>
-                  <span>თავიდან</span>
+                  <span>{t.navigation.home}</span>
                 </button>
               </div>
 
@@ -594,7 +621,7 @@ export default function Home() {
                   className="px-8 py-3 bg-gradient-to-r from-[#3B82F6] to-[#2563EB] hover:from-[#2563EB] hover:to-[#1D4ED8] text-white rounded-xl font-semibold
                            transition-all duration-300 transform hover:shadow-lg hover:-translate-y-0.5"
                 >
-                  გაგრძელება
+                  {t.navigation.continue}
                 </button>
               </div>
             </div>
@@ -622,7 +649,7 @@ export default function Home() {
                       d="M15 19l-7-7 7-7"
                     />
                   </svg>
-                  <span>უკან</span>
+                  <span>{t.navigation.back}</span>
                 </button>
                 <button
                   onClick={handleNewOrder}
@@ -641,71 +668,71 @@ export default function Home() {
                       d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
                     />
                   </svg>
-                  <span>თავიდან</span>
+                  <span>{t.navigation.home}</span>
                 </button>
               </div>
 
               {/* Order Summary */}
               <div className="bg-[#1E293B] rounded-xl p-4 shadow-md border border-[#475569]">
-                <h3 className="font-semibold text-[#F8FAFC] mb-3">შეკვეთის მონაცემები</h3>
+                <h3 className="font-semibold text-[#F8FAFC] mb-3">{t.orderSummary.title}</h3>
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
-                    <span className="text-[#94A3B8]">სერვისი:</span>
+                    <span className="text-[#94A3B8]">{t.orderSummary.service}:</span>
                     <span className="font-medium text-[#F8FAFC]">
-                      {serviceType === 'cargo' ? `ტვირთი (${subType})` : serviceType === 'crane' ? 'ამწე ლიფტი' : 'ევაკუატორი'}
+                      {getServiceLabel()}
                     </span>
                   </div>
                   {serviceType === 'evacuator' && customerVehicleType && (
                     <div className="flex justify-between">
-                      <span className="text-[#94A3B8]">ავტომობილი:</span>
+                      <span className="text-[#94A3B8]">{t.orderSummary.vehicle}:</span>
                       <span className="font-medium text-[#F8FAFC]">
-                        {CUSTOMER_VEHICLE_LABELS[customerVehicleType].title}
+                        {t.evacuatorTypeSelector.types[customerVehicleType].title}
                       </span>
                     </div>
                   )}
                   {serviceType === 'evacuator' && serviceVehicleType && (
                     <div className="flex justify-between">
-                      <span className="text-[#94A3B8]">ევაკუატორი:</span>
+                      <span className="text-[#94A3B8]">{t.orderSummary.evacuatorType}:</span>
                       <span className="font-medium text-[#F8FAFC]">
-                        {SERVICE_VEHICLE_LABELS[serviceVehicleType]}
+                        {t.serviceVehicleLabels[serviceVehicleType]}
                       </span>
                     </div>
                   )}
                   {serviceType === 'crane' && craneFloor && (
                     <div className="flex justify-between">
-                      <span className="text-[#94A3B8]">სართული:</span>
+                      <span className="text-[#94A3B8]">{t.orderSummary.floor}:</span>
                       <span className="font-medium text-[#F8FAFC]">
-                        {CRANE_FLOOR_LABELS[craneFloor].title}
+                        {t.craneLiftSelector.floors[craneFloor]}
                       </span>
                     </div>
                   )}
                   {serviceType === 'crane' && craneCargoType && (
                     <div className="flex justify-between">
-                      <span className="text-[#94A3B8]">ტვირთის ტიპი:</span>
+                      <span className="text-[#94A3B8]">{t.orderSummary.cargoType}:</span>
                       <span className="font-medium text-[#F8FAFC]">
-                        {CRANE_CARGO_LABELS[craneCargoType]}
+                        {t.craneLiftSelector.cargoTypes[craneCargoType]}
                       </span>
                     </div>
                   )}
                   {serviceType === 'crane' && craneDuration && (
                     <div className="flex justify-between">
-                      <span className="text-[#94A3B8]">ხანგრძლივობა:</span>
+                      <span className="text-[#94A3B8]">{t.orderSummary.duration}:</span>
                       <span className="font-medium text-[#F8FAFC]">
-                        {CRANE_DURATION_LABELS[craneDuration]}
+                        {t.craneLiftSelector.durations[craneDuration]}
                       </span>
                     </div>
                   )}
                   {distance && (
                     <div className="flex justify-between">
-                      <span className="text-[#94A3B8]">მანძილი:</span>
-                      <span className="font-medium text-[#F8FAFC]">{distance} კმ</span>
+                      <span className="text-[#94A3B8]">{t.orderSummary.distance}:</span>
+                      <span className="font-medium text-[#F8FAFC]">{distance} {t.locationPicker.km}</span>
                     </div>
                   )}
                   {isScheduled && scheduledTime && (
                     <div className="flex justify-between">
-                      <span className="text-[#94A3B8]">დრო:</span>
+                      <span className="text-[#94A3B8]">{t.orderSummary.time}:</span>
                       <span className="font-medium text-[#F8FAFC]">
-                        {scheduledTime.toLocaleDateString('ka-GE')}
+                        {scheduledTime.toLocaleDateString(getLocale())}
                       </span>
                     </div>
                   )}
@@ -735,11 +762,11 @@ export default function Home() {
           <p className="text-xs text-slate-500">
             &copy; {new Date().getFullYear()} EXPRO.GE{' '}
             <span className="mx-1">·</span>
-            <Link href="/privacy" className="hover:text-slate-400 transition-colors">კონფიდენციალურობა</Link>
+            <Link href="/privacy" className="hover:text-slate-400 transition-colors">{t.footer.privacy}</Link>
             <span className="mx-1">·</span>
-            <Link href="/terms" className="hover:text-slate-400 transition-colors">პირობები</Link>
+            <Link href="/terms" className="hover:text-slate-400 transition-colors">{t.footer.terms}</Link>
             <span className="mx-1">·</span>
-            <Link href="/contact" className="hover:text-slate-400 transition-colors">კონტაქტი</Link>
+            <Link href="/contact" className="hover:text-slate-400 transition-colors">{t.footer.contact}</Link>
           </p>
         </footer>
 

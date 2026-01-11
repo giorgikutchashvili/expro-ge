@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
 import { Noto_Sans_Georgian } from "next/font/google";
 import "./globals.css";
+import { LanguageProvider } from "@/contexts/LanguageContext";
 
 const notoSansGeorgian = Noto_Sans_Georgian({
-  subsets: ["georgian", "latin"],
+  subsets: ["georgian", "latin", "cyrillic-ext"],
   variable: "--font-georgian",
   weight: ["300", "400", "500", "600", "700"],
 });
@@ -37,7 +38,9 @@ export default function RootLayout({
   return (
     <html lang="ka">
       <body className={`${notoSansGeorgian.variable} font-sans antialiased`}>
-        {children}
+        <LanguageProvider>
+          {children}
+        </LanguageProvider>
       </body>
     </html>
   );

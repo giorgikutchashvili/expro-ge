@@ -6,9 +6,8 @@ import {
   CraneCargoType,
   CraneDuration,
   CRANE_FLOOR_LABELS,
-  CRANE_CARGO_LABELS,
-  CRANE_DURATION_LABELS,
 } from '@/lib/types';
+import { useTranslation } from '@/contexts/LanguageContext';
 
 interface CraneLiftSelectorProps {
   onComplete: (floor: CraneFloor, cargoType: CraneCargoType, duration: CraneDuration) => void;
@@ -117,6 +116,7 @@ export default function CraneLiftSelector({ onComplete, onBack }: CraneLiftSelec
   const [selectedFloor, setSelectedFloor] = useState<CraneFloor | null>(null);
   const [selectedCargoType, setSelectedCargoType] = useState<CraneCargoType | null>(null);
   const [selectedDuration, setSelectedDuration] = useState<CraneDuration | null>(null);
+  const t = useTranslation();
 
   const handleFloorSelect = (floor: CraneFloor) => {
     setSelectedFloor(floor);
@@ -148,22 +148,22 @@ export default function CraneLiftSelector({ onComplete, onBack }: CraneLiftSelec
   const getStepTitle = () => {
     switch (step) {
       case 'floor':
-        return 'აირჩიეთ სართული';
+        return t.craneLiftSelector.floorTitle;
       case 'cargoType':
-        return 'აირჩიეთ ტვირთის ტიპი';
+        return t.craneLiftSelector.cargoTitle;
       case 'duration':
-        return 'სამუშაოს ხანგრძლივობა';
+        return t.craneLiftSelector.durationTitle;
     }
   };
 
   const getStepDescription = () => {
     switch (step) {
       case 'floor':
-        return 'რომელ სართულზე გჭირდებათ ტვირთის აწევა/ჩამოწევა?';
+        return t.craneLiftSelector.floorSubtitle;
       case 'cargoType':
-        return 'რა ტიპის ტვირთს ატვირთავთ/ჩამოტვირთავთ?';
+        return t.craneLiftSelector.cargoSubtitle;
       case 'duration':
-        return 'რამდენ ხანს გჭირდებათ ამწე?';
+        return t.craneLiftSelector.durationSubtitle;
     }
   };
 
@@ -221,11 +221,11 @@ export default function CraneLiftSelector({ onComplete, onBack }: CraneLiftSelec
                 {/* Text */}
                 <div className="text-left ml-3 sm:ml-4 flex-1 min-w-0">
                   <h3 className="font-bold text-xl sm:text-2xl text-white mb-0.5">
-                    {label.title}
+                    {t.craneLiftSelector.floors[floor]}
                   </h3>
                   {label.surcharge > 0 && (
                     <p className="text-xs sm:text-sm text-white/80">
-                      +{label.surcharge}₾ დამატებით
+                      +{label.surcharge}₾ {t.craneLiftSelector.floorSurcharge}
                     </p>
                   )}
                 </div>
@@ -246,7 +246,6 @@ export default function CraneLiftSelector({ onComplete, onBack }: CraneLiftSelec
       {step === 'cargoType' && (
         <div className="flex flex-col gap-3">
           {cargoTypeOrder.map((cargoType) => {
-            const label = CRANE_CARGO_LABELS[cargoType];
             const Icon = cargoIcons[cargoType];
             const isSelected = selectedCargoType === cargoType;
 
@@ -269,7 +268,7 @@ export default function CraneLiftSelector({ onComplete, onBack }: CraneLiftSelec
                 {/* Text */}
                 <div className="text-left ml-3 sm:ml-4 flex-1 min-w-0">
                   <h3 className="font-bold text-lg sm:text-xl text-white">
-                    {label}
+                    {t.craneLiftSelector.cargoTypes[cargoType]}
                   </h3>
                 </div>
 
@@ -289,7 +288,6 @@ export default function CraneLiftSelector({ onComplete, onBack }: CraneLiftSelec
       {step === 'duration' && (
         <div className="flex flex-col gap-3">
           {durationOrder.map((duration) => {
-            const label = CRANE_DURATION_LABELS[duration];
             const Icon = durationIcons[duration];
             const isSelected = selectedDuration === duration;
 
@@ -312,7 +310,7 @@ export default function CraneLiftSelector({ onComplete, onBack }: CraneLiftSelec
                 {/* Text */}
                 <div className="text-left ml-3 sm:ml-4 flex-1 min-w-0">
                   <h3 className="font-bold text-xl sm:text-2xl text-white">
-                    {label}
+                    {t.craneLiftSelector.durations[duration]}
                   </h3>
                 </div>
 
@@ -336,7 +334,7 @@ export default function CraneLiftSelector({ onComplete, onBack }: CraneLiftSelec
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
         </svg>
-        <span>უკან</span>
+        <span>{t.navigation.back}</span>
       </button>
     </div>
   );

@@ -11,7 +11,7 @@ import {
   Timestamp,
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { ServiceVehicleType, SERVICE_VEHICLE_LABELS, CRANE_DURATION_LABELS, CraneDuration } from '@/lib/types';
+import { ServiceVehicleType, SERVICE_VEHICLE_LABELS, CRANE_DURATION_LABELS, CRANE_FLOOR_LABELS, CraneDuration, CraneFloor } from '@/lib/types';
 import {
   Plus,
   Edit2,
@@ -33,6 +33,7 @@ interface Driver {
   vehicleType?: string; // Legacy field for cargo
   serviceVehicleType?: ServiceVehicleType; // For evacuator
   craneDuration?: CraneDuration; // For crane
+  craneFloorCapability?: CraneFloor[]; // Which floor ranges this crane driver can handle
   baseLocation?: string;
   workingDays?: string[];
   workingHours?: { start: string; end: string };
@@ -63,6 +64,13 @@ const craneDurationTypes: { value: CraneDuration; label: string }[] = [
   { value: 'ONE_TIME', label: CRANE_DURATION_LABELS.ONE_TIME },
   { value: 'HOURLY', label: CRANE_DURATION_LABELS.HOURLY },
   { value: 'FULL_DAY', label: CRANE_DURATION_LABELS.FULL_DAY },
+];
+
+// Crane floor capability types
+const craneFloorTypes: { value: CraneFloor; label: string }[] = [
+  { value: 'FLOOR_1_7', label: CRANE_FLOOR_LABELS.FLOOR_1_7.title },
+  { value: 'FLOOR_8_11', label: CRANE_FLOOR_LABELS.FLOOR_8_11.title },
+  { value: 'FLOOR_12_20', label: CRANE_FLOOR_LABELS.FLOOR_12_20.title },
 ];
 
 // Crane lift icon
@@ -96,6 +104,7 @@ interface FormData {
   vehicleType: string;
   serviceVehicleType: ServiceVehicleType;
   craneDuration: CraneDuration;
+  craneFloorCapability: CraneFloor[];
   baseLocation: string;
   workingDays: string[];
   workingHoursStart: string;
@@ -109,6 +118,7 @@ const defaultFormData: FormData = {
   vehicleType: 'M',
   serviceVehicleType: 'STANDARD',
   craneDuration: 'ONE_TIME',
+  craneFloorCapability: ['FLOOR_1_7', 'FLOOR_8_11', 'FLOOR_12_20'],
   baseLocation: '',
   workingDays: ['MON', 'TUE', 'WED', 'THU', 'FRI'],
   workingHoursStart: '09:00',
@@ -164,6 +174,7 @@ export default function DriversPage() {
       vehicleType: driver.vehicleType || 'M',
       serviceVehicleType: driver.serviceVehicleType || 'STANDARD',
       craneDuration: driver.craneDuration || 'ONE_TIME',
+      craneFloorCapability: driver.craneFloorCapability || ['FLOOR_1_7', 'FLOOR_8_11', 'FLOOR_12_20'],
       baseLocation: driver.baseLocation || '',
       workingDays: driver.workingDays || ['MON', 'TUE', 'WED', 'THU', 'FRI'],
       workingHoursStart: driver.workingHours?.start || '09:00',
@@ -190,7 +201,10 @@ export default function DriversPage() {
         } else if (formData.driverType === 'evacuator') {
           return { serviceVehicleType: formData.serviceVehicleType };
         } else {
-          return { craneDuration: formData.craneDuration };
+          return {
+            craneDuration: formData.craneDuration,
+            craneFloorCapability: formData.craneFloorCapability,
+          };
         }
       };
 
@@ -242,6 +256,15 @@ export default function DriversPage() {
     }));
   };
 
+  const toggleFloorCapability = (floor: CraneFloor) => {
+    setFormData((prev) => ({
+      ...prev,
+      craneFloorCapability: prev.craneFloorCapability.includes(floor)
+        ? prev.craneFloorCapability.filter((f) => f !== floor)
+        : [...prev.craneFloorCapability, floor],
+    }));
+  };
+
   const getVehicleLabel = (driver: Driver) => {
     if (driver.serviceVehicleType) {
       return SERVICE_VEHICLE_LABELS[driver.serviceVehicleType];
@@ -264,6 +287,12 @@ export default function DriversPage() {
       return 'ორშ-პარ';
     }
     return days.map((d) => weekDays.find((w) => w.value === d)?.label).join(', ');
+  };
+
+  const getFloorCapabilityLabel = (floors?: CraneFloor[]) => {
+    if (!floors || floors.length === 0) return '-';
+    if (floors.length === 3) return 'ყველა სართული';
+    return floors.map((f) => craneFloorTypes.find((ft) => ft.value === f)?.label).join(', ');
   };
 
   // Filter drivers
@@ -429,6 +458,12 @@ export default function DriversPage() {
                   <div className="flex items-center text-sm text-slate-400">
                     <Clock className="w-4 h-4 mr-2" />
                     <span>{driver.workingHours.start} - {driver.workingHours.end}</span>
+                  </div>
+                )}
+                {isCraneDriver(driver) && driver.craneFloorCapability && (
+                  <div className="flex items-center text-sm text-slate-400">
+                    <CraneLiftIcon className="w-4 h-4 mr-2" />
+                    <span>{getFloorCapabilityLabel(driver.craneFloorCapability)}</span>
                   </div>
                 )}
               </div>
@@ -752,6 +787,29 @@ export default function DriversPage() {
                         ))}
                       </select>
                     </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-slate-400 mb-2">
+                      სართულების შესაძლებლობა
+                    </label>
+                    <div className="flex flex-wrap gap-2">
+                      {craneFloorTypes.map((floor) => (
+                        <button
+                          key={floor.value}
+                          type="button"
+                          onClick={() => toggleFloorCapability(floor.value)}
+                          className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                            formData.craneFloorCapability.includes(floor.value)
+                              ? 'bg-emerald-500 text-white'
+                              : 'bg-[#334155] text-slate-400 hover:bg-[#475569]'
+                          }`}
+                        >
+                          {floor.label}
+                        </button>
+                      ))}
+                    </div>
+                    <p className="text-xs text-slate-500 mt-1">აირჩიეთ სართულები, რომელზეც მძღოლს შეუძლია მუშაობა</p>
                   </div>
 
                   <div>

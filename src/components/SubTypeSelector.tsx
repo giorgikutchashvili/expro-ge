@@ -1,8 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import { CargoSize, CARGO_SIZE_LABELS } from '@/lib/types';
+import { CargoSize } from '@/lib/types';
 import { CargoTruckIcon } from '@/components/icons';
+import { useTranslation } from '@/contexts/LanguageContext';
 
 interface SubTypeSelectorProps {
   onSelect: (subType: CargoSize) => void;
@@ -13,6 +14,7 @@ const cargoSizeOrder: CargoSize[] = ['S', 'M', 'L', 'XL', 'CONSTRUCTION'];
 
 export default function SubTypeSelector({ onSelect, onBack }: SubTypeSelectorProps) {
   const [selected, setSelected] = useState<CargoSize | null>(null);
+  const t = useTranslation();
 
   const handleSelect = (size: CargoSize) => {
     setSelected(size);
@@ -24,17 +26,17 @@ export default function SubTypeSelector({ onSelect, onBack }: SubTypeSelectorPro
       {/* Header */}
       <div className="text-center">
         <h2 className="text-xl sm:text-2xl font-bold text-[#F8FAFC] mb-2">
-          აირჩიეთ ტვირთის ზომა
+          {t.subTypeSelector.title}
         </h2>
         <p className="text-[#94A3B8] text-sm">
-          აირჩიეთ ტვირთის ზომა თქვენი საჭიროების მიხედვით
+          {t.subTypeSelector.subtitle}
         </p>
       </div>
 
       {/* Cargo Size Cards */}
       <div className="flex flex-col gap-3">
         {cargoSizeOrder.map((size) => {
-          const label = CARGO_SIZE_LABELS[size];
+          const label = t.subTypeSelector.sizes[size];
           const isSelected = selected === size;
 
           return (
@@ -54,12 +56,15 @@ export default function SubTypeSelector({ onSelect, onBack }: SubTypeSelectorPro
               </div>
 
               {/* Text */}
-              <div className="text-left ml-3 sm:ml-4 flex-1 min-w-0">
-                <h3 className="font-bold text-xl sm:text-2xl text-white mb-0.5">
+              <div className="text-center ml-3 sm:ml-4 flex-1 min-w-0">
+                <h3 className="font-bold text-xl sm:text-2xl text-white mb-1">
                   {label.title}
                 </h3>
-                <p className="text-xs sm:text-sm text-white/80 truncate">
-                  {label.dimensions}, {label.weight}
+                <p className="text-xs sm:text-sm text-white/90 font-medium">
+                  {label.weight}
+                </p>
+                <p className="text-xs sm:text-sm text-white/70">
+                  {label.dimensions}
                 </p>
               </div>
 
@@ -90,7 +95,7 @@ export default function SubTypeSelector({ onSelect, onBack }: SubTypeSelectorPro
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
         </svg>
-        <span>უკან</span>
+        <span>{t.navigation.back}</span>
       </button>
     </div>
   );

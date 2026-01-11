@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
+import { useTranslation, useLanguage } from '@/contexts/LanguageContext';
 
 interface DateTimePickerProps {
   scheduledTime: Date | null;
@@ -15,6 +16,15 @@ export default function DateTimePicker({
   isScheduled,
   onIsScheduledChange,
 }: DateTimePickerProps) {
+  const t = useTranslation();
+  const { language } = useLanguage();
+
+  const localeMap = {
+    ka: 'ka-GE',
+    en: 'en-US',
+    ru: 'ru-RU',
+  };
+
   const { minDate, minTime, minDateTime } = useMemo(() => {
     const now = new Date();
     const minDT = new Date(now.getTime() + 60 * 60 * 1000); // 1 hour from now
@@ -104,7 +114,7 @@ export default function DateTimePicker({
 
   return (
     <div className="w-full bg-white rounded-xl p-6 shadow-md">
-      <h3 className="text-lg font-semibold text-gray-800 mb-4">როდის გჭირდებათ?</h3>
+      <h3 className="text-lg font-semibold text-gray-800 mb-4">{t.dateTimePicker.title}</h3>
 
       {/* Toggle Buttons */}
       <div className="flex space-x-4 mb-6">
@@ -126,7 +136,7 @@ export default function DateTimePicker({
                 d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
               />
             </svg>
-            <span>ახლავე</span>
+            <span>{t.dateTimePicker.now}</span>
           </div>
         </button>
 
@@ -148,7 +158,7 @@ export default function DateTimePicker({
                 d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
               />
             </svg>
-            <span>დაგეგმვა</span>
+            <span>{t.dateTimePicker.schedule}</span>
           </div>
         </button>
       </div>
@@ -159,7 +169,7 @@ export default function DateTimePicker({
           <div className="grid grid-cols-2 gap-4">
             {/* Date Input */}
             <div>
-              <label className="block text-sm font-medium text-gray-600 mb-2">თარიღი</label>
+              <label className="block text-sm font-medium text-gray-600 mb-2">{t.dateTimePicker.date}</label>
               <input
                 type="date"
                 value={scheduledTime ? formatDateForInput(scheduledTime) : minDate}
@@ -173,7 +183,7 @@ export default function DateTimePicker({
 
             {/* Time Input */}
             <div>
-              <label className="block text-sm font-medium text-gray-600 mb-2">დრო</label>
+              <label className="block text-sm font-medium text-gray-600 mb-2">{t.dateTimePicker.time}</label>
               <input
                 type="time"
                 value={scheduledTime ? formatTimeForInput(scheduledTime) : minTime}
@@ -189,16 +199,16 @@ export default function DateTimePicker({
           {/* Selected Time Display */}
           {scheduledTime && (
             <div className="bg-blue-50 rounded-lg p-4 text-center">
-              <p className="text-sm text-gray-600">დაგეგმილი დრო:</p>
+              <p className="text-sm text-gray-600">{t.dateTimePicker.scheduledTime}</p>
               <p className="text-lg font-semibold text-blue-700">
-                {scheduledTime.toLocaleDateString('ka-GE', {
+                {scheduledTime.toLocaleDateString(localeMap[language], {
                   weekday: 'long',
                   year: 'numeric',
                   month: 'long',
                   day: 'numeric',
                 })}
                 {', '}
-                {scheduledTime.toLocaleTimeString('ka-GE', {
+                {scheduledTime.toLocaleTimeString(localeMap[language], {
                   hour: '2-digit',
                   minute: '2-digit',
                 })}

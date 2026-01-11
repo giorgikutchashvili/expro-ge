@@ -3,6 +3,7 @@
 import { useCallback, useState, useRef, useEffect } from 'react';
 import { GoogleMap, Marker } from '@react-google-maps/api';
 import { Location } from '@/lib/types';
+import { useTranslation } from '@/contexts/LanguageContext';
 
 interface SingleLocationPickerProps {
   location: Location | null;
@@ -38,8 +39,10 @@ const mapOptions: google.maps.MapOptions = {
 export default function SingleLocationPicker({
   location,
   onLocationChange,
-  label = 'მისამართი',
+  label,
 }: SingleLocationPickerProps) {
+  const t = useTranslation();
+  const displayLabel = label || t.locationPicker.addressLabel;
   const [addressInput, setAddressInput] = useState(location?.address || '');
   const [mapCenter, setMapCenter] = useState(defaultCenter);
   const [mapZoom, setMapZoom] = useState(12);
@@ -211,11 +214,11 @@ export default function SingleLocationPicker({
           setMapZoom(15);
           setAddressError(null);
         } else {
-          setAddressError('მისამართი ვერ მოიძებნა');
+          setAddressError(t.locationPicker.addressNotFound);
         }
       }
     );
-  }, [onLocationChange]);
+  }, [onLocationChange, t.locationPicker.addressNotFound]);
 
   const handleSuggestionSelect = async (suggestion: PlaceSuggestion) => {
     const loc = await getPlaceDetails(suggestion.placeId);
@@ -285,7 +288,7 @@ export default function SingleLocationPicker({
 
   const handleSearch = () => {
     if (!addressInput.trim()) {
-      setAddressError('გთხოვთ შეიყვანოთ მისამართი');
+      setAddressError(t.locationPicker.enterAddress);
       return;
     }
     setShowSuggestions(false);
@@ -317,13 +320,13 @@ export default function SingleLocationPicker({
     <div className="w-full max-w-4xl mx-auto space-y-6">
       {/* Location Input */}
       <div className="bg-[#1E293B] rounded-xl p-4 sm:p-6 shadow-md space-y-3 sm:space-y-4 border border-[#475569]">
-        <h3 className="text-base sm:text-lg font-semibold text-[#F8FAFC] mb-3 sm:mb-4">{label}</h3>
+        <h3 className="text-base sm:text-lg font-semibold text-[#F8FAFC] mb-3 sm:mb-4">{displayLabel}</h3>
 
         <div ref={containerRef}>
           <label className="block text-sm font-medium text-[#94A3B8] mb-2">
             <span className="flex items-center space-x-2">
               <span className="w-3 h-3 bg-[#10B981] rounded-full"></span>
-              <span>მისამართი</span>
+              <span>{t.locationPicker.addressLabel}</span>
             </span>
           </label>
           <div className="flex flex-col sm:flex-row gap-2">
@@ -334,7 +337,7 @@ export default function SingleLocationPicker({
                 onChange={handleInputChange}
                 onFocus={() => addressInput.length >= 2 && setShowSuggestions(true)}
                 onKeyDown={handleKeyDown}
-                placeholder="ჩაწერეთ მისამართი..."
+                placeholder={t.locationPicker.addressPlaceholder}
                 className={`w-full px-3 sm:px-4 py-2.5 sm:py-3 pr-10 border rounded-lg focus:ring-2
                          focus:ring-[#10B981] focus:border-transparent outline-none transition-all
                          text-sm sm:text-base text-[#F8FAFC] placeholder:text-[#64748B] bg-[#334155]
@@ -399,7 +402,7 @@ export default function SingleLocationPicker({
                 type="button"
                 className="px-3 sm:px-4 py-2.5 sm:py-3 bg-[#10B981] hover:bg-[#059669] disabled:bg-[#10B981]/50
                          text-white rounded-lg transition-colors flex items-center space-x-1 sm:space-x-2"
-                title="ძებნა"
+                title={t.locationPicker.search}
               >
                 {isSearching ? (
                   <svg className="w-4 h-4 sm:w-5 sm:h-5 animate-spin" fill="none" viewBox="0 0 24 24">
@@ -411,7 +414,7 @@ export default function SingleLocationPicker({
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                   </svg>
                 )}
-                <span className="hidden sm:inline">ძებნა</span>
+                <span className="hidden sm:inline">{t.locationPicker.search}</span>
               </button>
 
               {/* Map Selection Button */}
@@ -422,7 +425,7 @@ export default function SingleLocationPicker({
                           ${selectionMode
                             ? 'bg-[#10B981] text-white'
                             : 'bg-[#334155] text-[#94A3B8] hover:bg-[#475569]'}`}
-                title="აირჩიეთ რუკაზე"
+                title={t.locationPicker.selectOnMap}
               >
                 <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
@@ -451,7 +454,7 @@ export default function SingleLocationPicker({
           <svg className="w-5 h-5 mr-2 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122" />
           </svg>
-          <span className="font-medium">დააწკაპუნეთ რუკაზე მისამართის ასარჩევად</span>
+          <span className="font-medium">{t.locationPicker.clickToSelect}</span>
           <button
             onClick={() => setSelectionMode(false)}
             type="button"

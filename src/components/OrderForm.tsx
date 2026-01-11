@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { formatPrice } from '@/lib/utils';
 import { PaymentMethodType } from '@/lib/types';
+import { useTranslation } from '@/contexts/LanguageContext';
 
 interface OrderFormProps {
   phone: string;
@@ -26,6 +27,7 @@ export default function OrderForm({
   onSubmit,
   isLoading,
 }: OrderFormProps) {
+  const t = useTranslation();
   const [phoneError, setPhoneError] = useState<string | null>(null);
 
   const validatePhone = (value: string): boolean => {
@@ -51,7 +53,7 @@ export default function OrderForm({
     onPhoneChange(formatted);
 
     if (formatted.length > 0 && !validatePhone(formatted)) {
-      setPhoneError('გთხოვთ შეიყვანოთ სწორი ნომერი (+995XXXXXXXXX ან 5XXXXXXXX)');
+      setPhoneError(t.orderForm.phoneError);
     } else {
       setPhoneError(null);
     }
@@ -61,7 +63,7 @@ export default function OrderForm({
     e.preventDefault();
 
     if (!validatePhone(phone)) {
-      setPhoneError('გთხოვთ შეიყვანოთ სწორი ნომერი');
+      setPhoneError(t.orderForm.phoneErrorShort);
       return;
     }
 
@@ -84,14 +86,14 @@ export default function OrderForm({
                 d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"
               />
             </svg>
-            <span>ტელეფონის ნომერი</span>
+            <span>{t.orderForm.phoneLabel}</span>
           </span>
         </label>
         <input
           type="tel"
           value={phone}
           onChange={handlePhoneChange}
-          placeholder="+995 5XX XXX XXX"
+          placeholder={t.orderForm.phonePlaceholder}
           className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:border-transparent
                      outline-none transition-all text-gray-900 placeholder:text-gray-400 bg-white ${
                        phoneError
@@ -117,7 +119,7 @@ export default function OrderForm({
       {/* Payment Method Toggle */}
       <div>
         <label className="block text-sm font-medium text-gray-600 mb-2">
-          გადახდის მეთოდი
+          {t.orderForm.paymentMethod}
         </label>
         <div className="flex space-x-3">
           <button
@@ -133,7 +135,7 @@ export default function OrderForm({
               <rect x="2" y="6" width="20" height="12" rx="2" />
               <circle cx="12" cy="12" r="3" />
             </svg>
-            <span>ნაღდი ფული</span>
+            <span>{t.orderForm.cash}</span>
           </button>
           <button
             type="button"
@@ -148,7 +150,7 @@ export default function OrderForm({
               <rect x="2" y="5" width="20" height="14" rx="2" />
               <path d="M2 10h20" />
             </svg>
-            <span>ბარათით</span>
+            <span>{t.orderForm.card}</span>
           </button>
         </div>
       </div>
@@ -156,7 +158,7 @@ export default function OrderForm({
       {/* Price Display */}
       <div className="bg-gradient-to-r from-blue-50 to-blue-100 rounded-xl p-5">
         <div className="flex justify-between items-center">
-          <span className="text-gray-700 font-medium">გადასახდელი თანხა:</span>
+          <span className="text-gray-700 font-medium">{t.orderForm.totalPrice}</span>
           <span className="text-2xl font-bold text-blue-600">{formatPrice(price.customerPrice)}</span>
         </div>
       </div>
@@ -195,7 +197,7 @@ export default function OrderForm({
                 d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
               />
             </svg>
-            <span>იგზავნება...</span>
+            <span>{t.orderForm.submitting}</span>
           </span>
         ) : (
           <span className="flex items-center justify-center space-x-2">
@@ -207,7 +209,7 @@ export default function OrderForm({
                 d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
               />
             </svg>
-            <span>შეკვეთის გაგზავნა</span>
+            <span>{t.orderForm.submit}</span>
           </span>
         )}
       </button>

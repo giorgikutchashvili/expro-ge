@@ -56,14 +56,14 @@ function CheckIcon({ className }: { className?: string }) {
 const BANK_DETAILS = {
   tbc: {
     name: 'თიბისი ბანკი',
-    iban: 'GE29TB7692945061453013',
+    iban: 'GE10TB7248945061100092',
     receiver: 'EXPRO LLC',
     color: '#00A3E0',
     logo: 'TBC',
   },
   bog: {
     name: 'საქართველოს ბანკი',
-    iban: 'GE84BG0000000548795624',
+    iban: 'GE83BG0000000160844522',
     receiver: 'EXPRO LLC',
     color: '#F37021',
     logo: 'BOG',
